@@ -16,7 +16,13 @@
     "generate": "prisma generate",
     "postinstall": "prisma generate",
     "render:build": "npm install && npx prisma generate && npm run build",
-    "render:start": "npx prisma migrate deploy && npm start"
+    "render:start": "npx prisma migrate deploy && npm start",
+    "seed": "tsx prisma/seed.ts",
+    "seed:prod": "npx prisma db seed",
+    "render:seed": "npx prisma migrate deploy && npx tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
