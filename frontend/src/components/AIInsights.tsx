@@ -336,7 +336,7 @@ export default function AIInsights({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                AI Financial Insights
+                AI Insights
               </h2>
               <p className="text-sm text-gray-500">Powered by Gemini AI</p>
             </div>
