@@ -1,13 +1,20 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "ai-finance-dashboard-frontend",
+  "version": "1.0.0",
+  "description": "AI Finance Dashboard Frontend",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "render:build": "npm install && npm run build:production",
+    "build:production": "SKIP_LINT=true next build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
