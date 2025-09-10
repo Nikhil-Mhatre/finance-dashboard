@@ -1,25 +1,25 @@
 databases:
-  - name: ai-finance-dashboard-prod-db
-    databaseName: finance_dashboard_prod
+  - name: ai-finance-dashboard-staging-db
+    databaseName: finance_dashboard_staging
     user: finance_user
-    plan: starter # Paid plan for production
+    plan: free
 
 services:
-  # Backend API Service - Production
+  # Backend API Service - Staging
   - type: web
-    name: ai-finance-dashboard-backend-prod
+    name: ai-finance-dashboard-backend-staging
     runtime: node
-    plan: starter # Paid plan for production
+    plan: free
     region: oregon
     buildCommand: npm run render:build
     startCommand: npm run render:start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
-        value: production # ← PRODUCTION environment
+        value: staging # ← STAGING environment
       - key: DATABASE_URL
         fromDatabase:
-          name: ai-finance-dashboard-prod-db
+          name: ai-finance-dashboard-staging-db
           property: connectionString
       - key: GEMINI_API_KEY
         sync: false
@@ -28,24 +28,24 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://ai-finance-dashboard-frontend-prod.onrender.com
+        value: https://ai-finance-dashboard-frontend-staging.onrender.com
 
-  # Frontend Web Service - Production
+  # Frontend Web Service - Staging
   - type: web
-    name: ai-finance-dashboard-frontend-prod
+    name: ai-finance-dashboard-frontend-staging
     runtime: node
-    plan: starter
+    plan: free
     region: oregon
     buildCommand: npm run render:build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
-        value: production # ← PRODUCTION environment
+        value: staging # ← STAGING environment
       - key: NEXT_PUBLIC_API_URL
-        value: https://ai-finance-dashboard-backend-prod.onrender.com
+        value: https://ai-finance-dashboard-backend-staging.onrender.com
       - key: NEXT_PUBLIC_WS_URL
-        value: wss://ai-finance-dashboard-backend-prod.onrender.com
+        value: wss://ai-finance-dashboard-backend-staging.onrender.com
       - key: NEXT_PUBLIC_APP_NAME
-        value: AI Finance Dashboard
+        value: AI Finance Dashboard - Staging
       - key: SKIP_LINT
         value: true
