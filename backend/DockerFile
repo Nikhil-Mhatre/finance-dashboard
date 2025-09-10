@@ -1,16 +1,20 @@
 FROM node:18-alpine
 
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create app directory
 WORKDIR /app
 
 # Install pnpm
 RUN npm install -g pnpm
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml* ./
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --prod=false
 
 # Copy source code
 COPY . .
@@ -21,8 +25,28 @@ RUN pnpm prisma generate
 # Build application
 RUN pnpm build
 
+# Remove dev dependencies
+RUN pnpm prune --prod
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S backend -u 1001
+
+# Change ownership of app directory
+RUN chown -R backend:nodejs /app
+
+# Switch to non-root user
+USER backend
+
 # Expose port
 EXPOSE 3001
 
-# Run migrations and start app
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm start"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3001/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

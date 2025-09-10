@@ -1,8 +1,12 @@
 {
-  "name": "finance-dashboard-backend",
+  "name": "ai-finance-dashboard-backend",
   "version": "1.0.0",
-  "description": "AI-Powered Finance Dashboard Backend API",
+  "description": "AI Finance Dashboard Backend API",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -11,7 +15,10 @@
     "clean": "rimraf dist",
     "type-check": "tsc --noEmit",
     "migrate:deploy": "prisma migrate deploy",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "postinstall": "prisma generate",
+    "render:build": "npm install && npx prisma generate && npm run build",
+    "render:start": "npx prisma migrate deploy && npm start"
   },
   "keywords": [],
   "author": "",
