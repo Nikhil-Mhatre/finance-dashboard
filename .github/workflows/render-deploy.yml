@@ -119,50 +119,62 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
 
-  deploy-staging:
-    name: Deploy to Render Staging
-    runs-on: ubuntu-latest
-    needs: [test, security-scan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    deploy-staging:
+      name: Deploy to Render Staging
+      runs-on: ubuntu-latest
+      needs: [test, security-scan]
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
-    environment:
-      name: staging
-      url: https://ai-finance-dashboard-frontend-staging.onrender.com
+      environment:
+        name: staging
+        url: https://ai-finance-dashboard-frontend-staging.onrender.com
 
-    steps:
-      - name: Trigger Render Deploy
-        run: |
-          curl -X POST "${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}" \
-          -H "Content-Type: application/json"
+      steps:
+        - name: Check if deploy hook exists
+          run: |
+            if [[ -z "${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}" ]]; then
+              echo "⚠️ RENDER_STAGING_DEPLOY_HOOK secret not configured"
+              echo "🚀 Skipping deployment - set up Render services first"
+              exit 0
+            fi
 
-  deploy-production:
-    name: Deploy to Render Production
-    runs-on: ubuntu-latest
-    needs: [test, security-scan]
-    if: startsWith(github.ref, 'refs/tags/v')
+        - name: Trigger Render Deploy
+          run: |
+            if [[ -n "${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}" ]]; then
+              curl -X POST "${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}" \
+              -H "Content-Type: application/json"
+            else
+              echo "Deploy hook not configured, skipping..."
+            fi
 
-    environment:
-      name: production
-      url: https://ai-finance-dashboard-frontend.onrender.com
+    deploy-production:
+      name: Deploy to Render Production
+      runs-on: ubuntu-latest
+      needs: [test, security-scan]
+      if: startsWith(github.ref, 'refs/tags/v')
 
-    steps:
-      - name: Trigger Render Deploy
-        run: |
-          curl -X POST "${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK }}" \
-          -H "Content-Type: application/json"
+      environment:
+        name: production
+        url: https://ai-finance-dashboard-frontend.onrender.com
 
-  notify:
-    name: Notification
-    runs-on: ubuntu-latest
-    needs: [deploy-staging, deploy-production]
-    if: always()
+      steps:
+        - name: Trigger Render Deploy
+          run: |
+            curl -X POST "${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK }}" \
+            -H "Content-Type: application/json"
 
-    steps:
-      - name: Deployment Status
-        run: |
-          if [[ "${{ needs.deploy-staging.result }}" == "success" || "${{ needs.deploy-production.result }}" == "success" ]]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed!"
-            exit 1
-          fi
+    notify:
+      name: Notification
+      runs-on: ubuntu-latest
+      needs: [deploy-staging, deploy-production]
+      if: always()
+
+      steps:
+        - name: Deployment Status
+          run: |
+            if [[ "${{ needs.deploy-staging.result }}" == "success" || "${{ needs.deploy-production.result }}" == "success" ]]; then
+              echo "✅ Deployment successful!"
+            else
+              echo "❌ Deployment failed!"
+              exit 1
+            fi
