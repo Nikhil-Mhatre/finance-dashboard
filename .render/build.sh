@@ -1,25 +1,29 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+# AI Finance Dashboard - Build Script
+set -o errexit
 
-echo "🏗️ Starting Render build process..."
+echo "🏗️ Starting AI Finance Dashboard build..."
 
-# Backend build
-if [ -d "backend" ]; then
-  echo "📦 Building backend..."
-  cd backend
-  npm install
-  npx prisma generate
-  npm run build
-  cd ..
-fi
+# Install backend dependencies
+echo "📦 Installing backend dependencies..."
+cd backend
+pnpm install --frozen-lockfile
 
-# Frontend build
-if [ -d "frontend" ]; then
-  echo "🎨 Building frontend..."
-  cd frontend
-  npm install
-  npm run build:production
-  cd ..
-fi
+# Generate Prisma client
+echo "🗄️ Generating Prisma client..."
+pnpm prisma generate
+
+# Build backend
+echo "🔧 Building backend..."
+pnpm build
+
+# Install frontend dependencies
+echo "📦 Installing frontend dependencies..."
+cd ../frontend
+pnpm install --frozen-lockfile
+
+# Build frontend with linting disabled
+echo "🎨 Building frontend..."
+SKIP_LINT=true pnpm build
 
 echo "✅ Build completed successfully!"

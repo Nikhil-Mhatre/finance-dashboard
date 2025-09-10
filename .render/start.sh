@@ -1,13 +1,14 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+# AI Finance Dashboard - Start Script
+set -o errexit
 
-echo "🚀 Starting application..."
+echo "🚀 Starting AI Finance Dashboard..."
 
 # Run database migrations
 echo "🗄️ Running database migrations..."
 cd backend
-npx prisma migrate deploy
+pnpm prisma migrate deploy
 
-# Start the application
-echo "▶️ Starting server..."
-npm start
+# Start the backend server
+echo "▶️ Starting backend server..."
+pnpm start
