@@ -26,7 +26,7 @@
   "packageManager": "pnpm@10.15.1",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@prisma/client": "^6.15.0",
+    "@prisma/client": "6.15.0",
     "bcryptjs": "^3.0.2",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
