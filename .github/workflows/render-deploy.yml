@@ -33,45 +33,57 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      # Separate setup for backend
+      - name: Setup Node.js for Backend
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
+          cache-dependency-path: backend/package-lock.json # ← Fix: Specify exact path
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Install root dependencies
-        run: pnpm install
+      # Separate setup for frontend
+      - name: Setup Node.js for Frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json # ← Fix: Specify exact path
 
       - name: Install backend dependencies
-        run: cd backend && pnpm install
+        run: npm ci
+        working-directory: backend
 
       - name: Install frontend dependencies
-        run: cd frontend && pnpm install
+        run: npm ci
+        working-directory: frontend
 
       - name: Generate Prisma Client
-        run: cd backend && pnpm prisma generate
+        run: npx prisma generate
+        working-directory: backend
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
 
       - name: Run database migrations
-        run: cd backend && pnpm prisma migrate deploy
+        run: npx prisma migrate deploy
+        working-directory: backend
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
 
       - name: Type check backend
-        run: cd backend && pnpm type-check
+        run: npm run type-check
+        working-directory: backend
 
       - name: Type check frontend
-        run: cd frontend && pnpm type-check
+        run: npm run type-check
+        working-directory: frontend
 
       - name: Build backend
-        run: cd backend && pnpm build
+        run: npm run build
+        working-directory: backend
 
       - name: Build frontend (production mode)
-        run: cd frontend && SKIP_LINT=true pnpm build
+        run: SKIP_LINT=true npm run build
+        working-directory: frontend
 
       - name: Run backend tests
         run: cd backend && pnpm test || echo "No tests found"
