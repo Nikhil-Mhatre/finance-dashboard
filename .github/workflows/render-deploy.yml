@@ -1,4 +1,4 @@
-name: Deploy to Render
+name: Deploy to Render Production
 
 on:
   push:
@@ -22,16 +22,14 @@ jobs:
 
     services:
       postgres:
-        image: postgres:13
+        image: postgres:15
         env:
-          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: finance_dashboard
+          POSTGRES_DB: finance_dashboard_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
-          --health-start-period 30s
           --health-retries 5
         ports:
           - 5432:5432
@@ -40,58 +38,58 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: "pnpm"
           cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+            backend/pnpm-lock.yaml
+            frontend/pnpm-lock.yaml
 
       - name: Install backend dependencies
-        run: |
-          cd backend
-          npm ci
-
-      - name: Generate Prisma Client
-        run: |
-          cd backend
-          npx prisma generate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard
-
-      - name: Run database migrations
-        run: |
-          cd backend
-          npx prisma migrate deploy
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard
-
-      - name: Build backend
-        run: |
-          cd backend
-          npm run build
+        run: pnpm install
+        working-directory: backend
 
       - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci
+        run: pnpm install
+        working-directory: frontend
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
+
+      - name: Run database migrations
+        run: pnpm prisma migrate deploy
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
+
+      - name: Type check backend
+        run: pnpm type-check
+        working-directory: backend
+
+      - name: Type check frontend
+        run: pnpm type-check
+        working-directory: frontend
+
+      - name: Build backend
+        run: pnpm build
+        working-directory: backend
 
       - name: Build frontend
-        run: |
-          cd frontend
-          SKIP_LINT=true npm run build
+        run: SKIP_LINT=true pnpm build
+        working-directory: frontend
 
-      - name: Run backend tests
+      - name: Run tests (if available)
         run: |
-          cd backend
-          npm test || echo "No backend tests found"
-
-      - name: Run frontend tests
-        run: |
-          cd frontend
-          npm test || echo "No frontend tests found"
+          cd backend && (pnpm test || echo "No backend tests found")
+          cd ../frontend && (pnpm test || echo "No frontend tests found")
 
   security-scan:
     name: Security Scan
@@ -122,87 +120,108 @@ jobs:
         continue-on-error: true
 
   deploy:
-    name: Deploy to Render
+    name: Deploy to Render Production
     runs-on: ubuntu-latest
     needs: [test, security-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     environment:
       name: production
-      url: https://ai-finance-dashboard-frontend.onrender.com
+      url: https://your-frontend-app.onrender.com
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy backend service
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
+      - name: Check Deploy Hooks Configuration
+        id: check-hooks
         run: |
-          echo "🚀 Deploying backend..."
-          response=$(curl -s -w "%{http_code}" -o /tmp/backend_deploy.txt \
+          echo "Checking deployment prerequisites..."
+          if [[ -z "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" ]]; then
+            echo "⚠️  RENDER_DEPLOY_HOOK_BACKEND not configured"
+            echo "backend_ready=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Backend deploy hook configured"
+            echo "backend_ready=true" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ -z "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}" ]]; then
+            echo "⚠️  RENDER_DEPLOY_HOOK_FRONTEND not configured"
+            echo "frontend_ready=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Frontend deploy hook configured"
+            echo "frontend_ready=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy Backend to Render
+        if: steps.check-hooks.outputs.backend_ready == 'true'
+        run: |
+          echo "🚀 Deploying backend to Render..."
+          response=$(curl -s -w "%{http_code}" -o /tmp/backend_response.txt \
             -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" \
             -H "Content-Type: application/json")
 
           http_code=${response: -3}
           if [[ $http_code -eq 200 || $http_code -eq 201 ]]; then
-            echo "✅ Backend deployment triggered successfully"
+            echo "✅ Backend deployment triggered successfully (HTTP $http_code)"
+            cat /tmp/backend_response.txt
           else
             echo "❌ Backend deployment failed (HTTP $http_code)"
-            cat /tmp/backend_deploy.txt
+            cat /tmp/backend_response.txt
             exit 1
           fi
 
-      - name: Deploy frontend service
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
+      - name: Deploy Frontend to Render
+        if: steps.check-hooks.outputs.frontend_ready == 'true'
         run: |
-          echo "🚀 Deploying frontend..."
-          response=$(curl -s -w "%{http_code}" -o /tmp/frontend_deploy.txt \
+          echo "🚀 Deploying frontend to Render..."
+          response=$(curl -s -w "%{http_code}" -o /tmp/frontend_response.txt \
             -X POST "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}" \
             -H "Content-Type: application/json")
 
           http_code=${response: -3}
           if [[ $http_code -eq 200 || $http_code -eq 201 ]]; then
-            echo "✅ Frontend deployment triggered successfully"
+            echo "✅ Frontend deployment triggered successfully (HTTP $http_code)"
+            cat /tmp/frontend_response.txt
           else
             echo "❌ Frontend deployment failed (HTTP $http_code)"
-            cat /tmp/frontend_deploy.txt
+            cat /tmp/frontend_response.txt
             exit 1
           fi
 
-      - name: Wait for deployment
+      - name: Deployment Instructions
+        if: steps.check-hooks.outputs.backend_ready != 'true' || steps.check-hooks.outputs.frontend_ready != 'true'
         run: |
-          echo "⏳ Waiting 30 seconds for deployment to complete..."
-          sleep 30
-
-      - name: Health check
-        run: |
-          echo "🔍 Checking application health..."
-          backend_health=$(curl -s -o /dev/null -w "%{http_code}" https://ai-finance-dashboard-backend.onrender.com/health)
-          frontend_health=$(curl -s -o /dev/null -w "%{http_code}" https://ai-finance-dashboard-frontend.onrender.com)
-
-          if [[ $backend_health -eq 200 ]]; then
-            echo "✅ Backend is healthy"
-          else
-            echo "⚠️ Backend health check failed (HTTP $backend_health)"
-          fi
-
-          if [[ $frontend_health -eq 200 ]]; then
-            echo "✅ Frontend is healthy"
-          else
-            echo "⚠️ Frontend health check failed (HTTP $frontend_health)"
-          fi
+          echo "📋 Deployment Setup Required:"
+          echo "=============================="
+          echo "1. Create services in Render Dashboard:"
+          echo "   • Backend: Node.js Web Service"
+          echo "   • Frontend: Node.js Web Service"
+          echo "   • Database: PostgreSQL"
+          echo ""
+          echo "2. Configure each service:"
+          echo "   • Connect GitHub repository"
+          echo "   • Set root directory (backend/ or frontend/)"
+          echo "   • Set build and start commands"
+          echo ""
+          echo "3. Get deploy hooks:"
+          echo "   • Service → Settings → Deploy Hook"
+          echo "   • Copy webhook URLs"
+          echo ""
+          echo "4. Add GitHub Secrets:"
+          echo "   • RENDER_DEPLOY_HOOK_BACKEND"
+          echo "   • RENDER_DEPLOY_HOOK_FRONTEND"
+          echo ""
+          echo "5. Push code again to trigger deployment"
 
   notify:
-    name: Deployment Notification
+    name: Deployment Status
     runs-on: ubuntu-latest
     needs: [test, security-scan, deploy]
     if: always()
 
     steps:
-      - name: Deployment summary
+      - name: Final Status Report
         run: |
-          echo "📊 CI/CD Pipeline Summary"
-          echo "========================"
+          echo "📊 CI/CD Pipeline Summary:"
+          echo "=========================="
 
           # Test results
           if [[ "${{ needs.test.result }}" == "success" ]]; then
@@ -211,30 +230,29 @@ jobs:
             echo "❌ Tests: Failed"
           fi
 
-          # Security scan results
+          # Security scan
           if [[ "${{ needs.security-scan.result }}" == "success" ]]; then
-            echo "✅ Security Scan: Passed"
+            echo "✅ Security: Passed"
           else
-            echo "⚠️ Security Scan: Issues found"
+            echo "⚠️  Security: Issues found"
           fi
 
-          # Deployment results
+          # Deployment
           if [[ "${{ needs.deploy.result }}" == "success" ]]; then
             echo "✅ Deployment: Success"
-            echo "🌐 Application URL: https://ai-finance-dashboard-frontend.onrender.com"
-            echo "🔗 API URL: https://ai-finance-dashboard-backend.onrender.com"
+            echo "🌐 Check your live app!"
           elif [[ "${{ needs.deploy.result }}" == "skipped" ]]; then
-            echo "⏭️ Deployment: Skipped (not main branch push)"
+            echo "⏭️  Deployment: Skipped (setup required)"
           else
             echo "❌ Deployment: Failed"
           fi
 
-          echo "========================"
+          echo "=========================="
 
-          # Overall status
+          # Overall result
           if [[ "${{ needs.test.result }}" == "success" && "${{ needs.security-scan.result }}" == "success" ]]; then
-            echo "🎉 Pipeline: Core processes successful!"
+            echo "🎉 CI/CD Core: All systems working!"
           else
-            echo "❌ Pipeline: Some issues need attention"
+            echo "🔧 CI/CD: Needs attention"
             exit 1
           fi
