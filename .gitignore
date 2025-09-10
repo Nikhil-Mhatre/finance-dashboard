@@ -16,6 +16,9 @@ node_modules/
 
 # Environment variables
 .env*
+# BUT allow .env.sample files (negation pattern)
+!.env.sample
+
 
 # Logs
 npm-debug.log*
