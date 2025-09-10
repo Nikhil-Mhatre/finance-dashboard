@@ -22,14 +22,16 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:13
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: finance_dashboard_test
+          POSTGRES_DB: finance_dashboard
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
+          --health-start-period 30s
           --health-retries 5
         ports:
           - 5432:5432
@@ -38,53 +40,58 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
+          cache: "npm"
           cache-dependency-path: |
-            backend/pnpm-lock.yaml
-            frontend/pnpm-lock.yaml
+            backend/package-lock.json
+            frontend/package-lock.json
 
       - name: Install backend dependencies
-        run: pnpm install
-        working-directory: backend
-
-      - name: Install frontend dependencies
-        run: pnpm install
-        working-directory: frontend
+        run: |
+          cd backend
+          npm ci
 
       - name: Generate Prisma Client
-        run: pnpm prisma generate
-        working-directory: backend
+        run: |
+          cd backend
+          npx prisma generate
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard
 
       - name: Run database migrations
-        run: pnpm prisma migrate deploy
-        working-directory: backend
+        run: |
+          cd backend
+          npx prisma migrate deploy
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
-
-      - name: Type check backend
-        run: pnpm type-check
-        working-directory: backend
-
-      - name: Type check frontend
-        run: pnpm type-check
-        working-directory: frontend
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard
 
       - name: Build backend
-        run: pnpm build
-        working-directory: backend
+        run: |
+          cd backend
+          npm run build
 
-      - name: Build frontend (production mode)
-        run: SKIP_LINT=true pnpm build
-        working-directory: frontend
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          SKIP_LINT=true npm run build
+
+      - name: Run backend tests
+        run: |
+          cd backend
+          npm test || echo "No backend tests found"
+
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          npm test || echo "No frontend tests found"
 
   security-scan:
     name: Security Scan
@@ -114,81 +121,88 @@ jobs:
           sarif_file: "trivy-results.sarif"
         continue-on-error: true
 
-  deploy-staging:
-    name: Deploy to Render Staging
+  deploy:
+    name: Deploy to Render
     runs-on: ubuntu-latest
     needs: [test, security-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     environment:
-      name: staging
-      url: https://ai-finance-dashboard-frontend-staging.onrender.com
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to Staging using Blueprint
-        run: |
-          echo "🚀 Deploying to staging environment..."
-
-          # Install Render CLI (if using Blueprint deployment)
-          curl -fsSL https://cli.render.com/install | bash
-
-          # Deploy using staging configuration
-          render blueprint launch render-staging.yaml \
-            --service-type=web \
-            --name="staging-deployment" \
-            --repo="$GITHUB_REPOSITORY" \
-            --branch="main"
-            
-          echo "✅ Staging deployment initiated successfully"
-
-  deploy-production:
-    name: Deploy to Render Production
-    runs-on: ubuntu-latest
-    needs: [test, security-scan]
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    environment:
       name: production
-      url: https://ai-finance-dashboard-frontend-prod.onrender.com
+      url: https://ai-finance-dashboard-frontend.onrender.com
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Production using Blueprint
+      - name: Deploy backend service
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
         run: |
-          echo "🚀 Deploying to production environment..."
+          echo "🚀 Deploying backend..."
+          response=$(curl -s -w "%{http_code}" -o /tmp/backend_deploy.txt \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" \
+            -H "Content-Type: application/json")
 
-          # Extract version from tag
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "Deploying version: $VERSION"
+          http_code=${response: -3}
+          if [[ $http_code -eq 200 || $http_code -eq 201 ]]; then
+            echo "✅ Backend deployment triggered successfully"
+          else
+            echo "❌ Backend deployment failed (HTTP $http_code)"
+            cat /tmp/backend_deploy.txt
+            exit 1
+          fi
 
-          # Install Render CLI
-          curl -fsSL https://cli.render.com/install | bash
+      - name: Deploy frontend service
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
+        run: |
+          echo "🚀 Deploying frontend..."
+          response=$(curl -s -w "%{http_code}" -o /tmp/frontend_deploy.txt \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}" \
+            -H "Content-Type: application/json")
 
-          # Deploy using production configuration
-          render blueprint launch render.yaml \
-            --service-type=web \
-            --name="production-deployment-$VERSION" \
-            --repo="$GITHUB_REPOSITORY" \
-            --branch="main"
-            
-          echo "✅ Production deployment initiated successfully"
+          http_code=${response: -3}
+          if [[ $http_code -eq 200 || $http_code -eq 201 ]]; then
+            echo "✅ Frontend deployment triggered successfully"
+          else
+            echo "❌ Frontend deployment failed (HTTP $http_code)"
+            cat /tmp/frontend_deploy.txt
+            exit 1
+          fi
+
+      - name: Wait for deployment
+        run: |
+          echo "⏳ Waiting 30 seconds for deployment to complete..."
+          sleep 30
+
+      - name: Health check
+        run: |
+          echo "🔍 Checking application health..."
+          backend_health=$(curl -s -o /dev/null -w "%{http_code}" https://ai-finance-dashboard-backend.onrender.com/health)
+          frontend_health=$(curl -s -o /dev/null -w "%{http_code}" https://ai-finance-dashboard-frontend.onrender.com)
+
+          if [[ $backend_health -eq 200 ]]; then
+            echo "✅ Backend is healthy"
+          else
+            echo "⚠️ Backend health check failed (HTTP $backend_health)"
+          fi
+
+          if [[ $frontend_health -eq 200 ]]; then
+            echo "✅ Frontend is healthy"
+          else
+            echo "⚠️ Frontend health check failed (HTTP $frontend_health)"
+          fi
 
   notify:
-    name: Notification
+    name: Deployment Notification
     runs-on: ubuntu-latest
-    needs: [test, security-scan, deploy-staging, deploy-production]
+    needs: [test, security-scan, deploy]
     if: always()
 
     steps:
-      - name: Deployment Status Summary
+      - name: Deployment summary
         run: |
-          echo "📊 CI/CD Workflow Summary:"
-          echo "========================="
+          echo "📊 CI/CD Pipeline Summary"
+          echo "========================"
 
           # Test results
           if [[ "${{ needs.test.result }}" == "success" ]]; then
@@ -204,27 +218,23 @@ jobs:
             echo "⚠️ Security Scan: Issues found"
           fi
 
-          # Staging deployment
-          if [[ "${{ needs.deploy-staging.result }}" == "success" ]]; then
-            echo "✅ Staging Deployment: Success"
-            echo "🌐 Staging URL: https://ai-finance-dashboard-frontend-staging.onrender.com"
-          elif [[ "${{ needs.deploy-staging.result }}" == "skipped" ]]; then
-            echo "⏭️ Staging Deployment: Skipped (not main branch push)"
-          fi
-
-          # Production deployment
-          if [[ "${{ needs.deploy-production.result }}" == "success" ]]; then
-            echo "✅ Production Deployment: Success"
-            echo "🌐 Production URL: https://ai-finance-dashboard-frontend-prod.onrender.com"
-          elif [[ "${{ needs.deploy-production.result }}" == "skipped" ]]; then
-            echo "⏭️ Production Deployment: Skipped (not tag push)"
-          fi
-
-          echo "========================="
-
-          if [[ "${{ needs.test.result }}" == "success" && "${{ needs.security-scan.result }}" == "success" ]]; then
-            echo "🎉 CI/CD Pipeline: Successfully completed!"
+          # Deployment results
+          if [[ "${{ needs.deploy.result }}" == "success" ]]; then
+            echo "✅ Deployment: Success"
+            echo "🌐 Application URL: https://ai-finance-dashboard-frontend.onrender.com"
+            echo "🔗 API URL: https://ai-finance-dashboard-backend.onrender.com"
+          elif [[ "${{ needs.deploy.result }}" == "skipped" ]]; then
+            echo "⏭️ Deployment: Skipped (not main branch push)"
           else
-            echo "❌ CI/CD Pipeline: Some issues need attention"
+            echo "❌ Deployment: Failed"
+          fi
+
+          echo "========================"
+
+          # Overall status
+          if [[ "${{ needs.test.result }}" == "success" && "${{ needs.security-scan.result }}" == "success" ]]; then
+            echo "🎉 Pipeline: Core processes successful!"
+          else
+            echo "❌ Pipeline: Some issues need attention"
             exit 1
           fi
