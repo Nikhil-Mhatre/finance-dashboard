@@ -1,32 +1,44 @@
-## **Updated README.md with Copy/Paste Code Sections**
+# AI-Powered Personal Finance Dashboard
 
-Here's your README.md with proper code blocks:
+> 🤖 Smart financial management with AI insights and real-time analytics
 
-````
-# AI-Powered Personal Finance Dashboard 🤖💰
+## ✨ Features
 
-A comprehensive financial management application with AI-powered insights, real-time analytics, and intelligent recommendations.
+- **Intelligent Transaction Management** - AI-categorized expense tracking
+- **Real-time Dashboard** - Live financial statistics and insights
+- **Gemini AI Integration** - Personalized financial recommendations
+- **Interactive Charts** - Beautiful data visualizations with Chart.js
+- **Secure Authentication** - JWT-based user management
+- **Responsive Design** - Works seamlessly on all devices
 
-## Features
+## 🚀 Tech Stack
 
-### ✅ Currently Implemented
-- **🔐 Authentication System** - Secure JWT-based login/register
-- **📊 Real-time Dashboard** - Live financial statistics and metrics
-- **💳 Transaction Management** - Add, view, and categorize transactions
-- **🤖 AI-Powered Insights** - Gemini API financial analysis and recommendations
-- **📈 Interactive Charts** - Beautiful data visualizations with Chart.js
-- **🏦 Account Management** - Multiple financial accounts support
-- **💻 Responsive Design** - Mobile-first, professional UI
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Backend**: Node.js, Express.js, Prisma ORM
+- **Database**: PostgreSQL
+- **AI**: Google Gemini API
+- **Deployment**: Render.com with CI/CD
 
-## Tech Stack
+## 🔧 Version
+
+Current Version: **v2.1.0**
+
+## 📊 Live Demo
+
+- **Frontend**: [Your Render Frontend URL]
+- **API Health**: [Your Render Backend URL]/health
+
+## 🛠️ Development
 
 ### Frontend
+
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first CSS framework
 - **Chart.js** - Interactive data visualization
 
 ### Backend
+
 - **Node.js** - Runtime environment
 - **Express.js** - Web application framework
 - **Prisma ORM** - Database toolkit and ORM
@@ -35,12 +47,13 @@ A comprehensive financial management application with AI-powered insights, real-
 ## Quick Start
 
 ### Prerequisites
-```bash
+
+````bash
 # Required software versions
 Node.js 18+
 PostgreSQL 15+
 pnpm (recommended) or npm
-````
+
 
 ### Installation
 
@@ -49,7 +62,7 @@ pnpm (recommended) or npm
 ```bash
 git clone https://github.com/yourusername/ai-finance-dashboard.git
 cd ai-finance-dashboard
-```
+````
 
 2. **Install pnpm globally (if not installed)**
 

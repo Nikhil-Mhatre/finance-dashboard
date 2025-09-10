@@ -196,9 +196,11 @@ export default function DashboardPage(): JSX.Element {
       {/* Page header with API status */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back! 👋</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Welcome back to AI Finance! 👋✨
+          </h1>
           <p className="text-gray-600 mt-1">
-            Here's what's happening with your finances today.
+            Here's your personalized financial overview for today.
           </p>
         </div>
 

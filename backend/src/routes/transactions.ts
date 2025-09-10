@@ -105,8 +105,11 @@ router.post("/", authenticateToken, async (req: AuthRequest, res) => {
       },
     });
 
+    // Add this after successful transaction creation
     console.log(
-      `💳 Transaction created: ${validatedData.description} - ${validatedData.amount}`
+      `💳 Transaction created successfully: ${validatedData.description} - $${
+        validatedData.amount
+      } [${new Date().toISOString()}]`
     );
 
     return res.status(201).json({

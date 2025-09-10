@@ -53,24 +53,28 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 /**
- * Health check endpoint
+ * Health check endpoint - Updated for CI/CD testing
+ * @route GET /health
+ * @returns {Object} Server status and database connection
  */
 app.get("/health", async (req, res) => {
   try {
+    // Test database connection
     await prisma.$queryRaw`SELECT 1`;
 
     res.status(200).json({
       status: "success",
-      message: "AI Finance Dashboard API is running!",
+      message: "AI Finance Dashboard API is running smoothly! 🚀",
       timestamp: new Date().toISOString(),
       database: "connected",
       environment: process.env.NODE_ENV || "development",
-      version: "2.0.0",
+      version: "2.1.0", // Updated version for testing
+      uptime: process.uptime(),
       features: {
         authentication: true,
         dashboard: true,
         transactions: true,
-        ai_insights: "coming_soon",
+        ai_insights: true,
         real_time: "coming_soon",
       },
     });
