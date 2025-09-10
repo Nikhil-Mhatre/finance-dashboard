@@ -1,0 +1,238 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * User model for authentication and profile management
+ */
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts     Account[]
+  transactions Transaction[]
+  budgets      Budget[]
+  investments  Investment[]
+  alerts       Alert[]
+  aiInsights   AIInsight[]
+
+  @@map("users")
+}
+
+/**
+ * Financial accounts (checking, savings, credit cards, etc.)
+ */
+model Account {
+  id          String      @id @default(cuid())
+  name        String
+  type        AccountType
+  balance     Decimal     @db.Decimal(10, 2)
+  currency    String      @default("USD")
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("accounts")
+}
+
+/**
+ * Financial transactions (income, expenses, transfers)
+ */
+model Transaction {
+  id          String          @id @default(cuid())
+  amount      Decimal         @db.Decimal(10, 2)
+  description String
+  category    TransactionCategory
+  type        TransactionType
+  date        DateTime
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+/**
+ * Budget management and tracking
+ */
+model Budget {
+  id        String   @id @default(cuid())
+  name      String
+  category  TransactionCategory
+  limit     Decimal  @db.Decimal(10, 2)
+  spent     Decimal  @db.Decimal(10, 2) @default(0)
+  period    BudgetPeriod
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("budgets")
+}
+
+/**
+ * Investment portfolio tracking
+ */
+model Investment {
+  id            String   @id @default(cuid())
+  symbol        String
+  name          String
+  quantity      Decimal  @db.Decimal(18, 8)
+  purchasePrice Decimal  @db.Decimal(10, 2)
+  currentPrice  Decimal  @db.Decimal(10, 2)
+  type          InvestmentType
+  purchaseDate  DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("investments")
+}
+
+/**
+ * Smart alerts and notifications
+ */
+model Alert {
+  id        String      @id @default(cuid())
+  title     String
+  message   String
+  type      AlertType
+  isRead    Boolean     @default(false)
+  isActive  Boolean     @default(true)
+  triggerAt DateTime?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("alerts")
+}
+
+/**
+ * AI-generated insights and recommendations
+ */
+model AIInsight {
+  id          String      @id @default(cuid())
+  title       String
+  content     String
+  type        InsightType
+  confidence  Float       @default(0.0)
+  isRelevant  Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_insights")
+}
+
+// Enums for better type safety and data consistency
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT_CARD
+  INVESTMENT
+  LOAN
+  OTHER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransactionCategory {
+  FOOD_DINING
+  TRANSPORTATION
+  SHOPPING
+  ENTERTAINMENT
+  BILLS_UTILITIES
+  HEALTHCARE
+  TRAVEL
+  EDUCATION
+  BUSINESS
+  PERSONAL_CARE
+  GIFTS_DONATIONS
+  INVESTMENTS
+  SALARY
+  FREELANCE
+  BUSINESS_INCOME
+  RENTAL_INCOME
+  DIVIDEND_INCOME
+  OTHER_INCOME
+  OTHER_EXPENSE
+}
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum InvestmentType {
+  STOCK
+  ETF
+  MUTUAL_FUND
+  BOND
+  CRYPTO
+  REAL_ESTATE
+  COMMODITY
+  OTHER
+}
+
+enum AlertType {
+  BUDGET_LIMIT
+  UNUSUAL_SPENDING
+  INVESTMENT_CHANGE
+  BILL_REMINDER
+  GOAL_ACHIEVEMENT
+  MARKET_OPPORTUNITY
+}
+
+enum InsightType {
+  SPENDING_PATTERN
+  BUDGET_RECOMMENDATION
+  INVESTMENT_ADVICE
+  SAVING_OPPORTUNITY
+  RISK_ASSESSMENT
+  MARKET_ANALYSIS
+}
