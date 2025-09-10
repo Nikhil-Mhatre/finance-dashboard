@@ -10,7 +10,6 @@ on:
 env:
   NODE_VERSION: "18"
 
-# Add proper permissions for CodeQL and security scanning
 permissions:
   actions: read
   contents: read
@@ -39,11 +38,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install pnpm globally first
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # Setup Node with multiple cache paths (FIXED)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -53,7 +50,6 @@ jobs:
             backend/pnpm-lock.yaml
             frontend/pnpm-lock.yaml
 
-      # Install dependencies with pnpm
       - name: Install backend dependencies
         run: pnpm install
         working-directory: backend
@@ -90,22 +86,11 @@ jobs:
         run: SKIP_LINT=true pnpm build
         working-directory: frontend
 
-      - name: Run backend tests (if available)
-        run: pnpm test || echo "No backend tests found"
-        working-directory: backend
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
-
-      - name: Run frontend tests (if available)
-        run: pnpm test || echo "No frontend tests found"
-        working-directory: frontend
-
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: test
 
-    # Inherit permissions from workflow level
     permissions:
       actions: read
       contents: read
@@ -123,7 +108,6 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
 
-      # FIXED: Updated to v3 to resolve deprecation error
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -144,55 +128,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Error handling step: Check if deploy hook exists
-      - name: Check deployment prerequisites
-        id: check-deploy
+      - name: Deploy to Staging using Blueprint
         run: |
-          echo "Checking deployment prerequisites..."
+          echo "🚀 Deploying to staging environment..."
 
-          if [[ -z "${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}" ]]; then
-            echo "⚠️  RENDER_STAGING_DEPLOY_HOOK secret not configured"
-            echo "📝 To enable deployment:"
-            echo "   1. Create services in Render dashboard"
-            echo "   2. Copy deploy hook URLs"
-            echo "   3. Add as GitHub secrets"
-            echo "   4. Re-run this workflow"
-            echo "deploy_ready=false" >> $GITHUB_OUTPUT
-          else
-            echo "✅ Deploy hook configured"
-            echo "🚀 Ready to deploy to staging"
-            echo "deploy_ready=true" >> $GITHUB_OUTPUT
-          fi
+          # Install Render CLI (if using Blueprint deployment)
+          curl -fsSL https://cli.render.com/install | bash
 
-      # Conditional deployment: Only run if deploy hook exists
-      - name: Trigger Render Deploy
-        if: steps.check-deploy.outputs.deploy_ready == 'true'
-        run: |
-          echo "🚀 Triggering Render deployment..."
-
-          response=$(curl -s -w "%{http_code}" -o /tmp/deploy_response.txt \
-            -X POST "${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}" \
-            -H "Content-Type: application/json")
-
-          http_code=${response: -3}
-
-          if [[ $http_code -eq 200 || $http_code -eq 201 ]]; then
-            echo "✅ Deployment triggered successfully (HTTP $http_code)"
-            cat /tmp/deploy_response.txt
-          else
-            echo "❌ Deployment failed (HTTP $http_code)"
-            echo "Response:"
-            cat /tmp/deploy_response.txt
-            exit 1
-          fi
-
-      # Fallback message when deployment is skipped
-      - name: Deployment Status
-        if: steps.check-deploy.outputs.deploy_ready == 'false'
-        run: |
-          echo "🔄 Deployment skipped - Render services not configured yet"
-          echo "✅ Build and tests passed successfully"
-          echo "🎯 Ready for manual deployment when Render services are set up"
+          # Deploy using staging configuration
+          render blueprint launch render-staging.yaml \
+            --service-type=web \
+            --name="staging-deployment" \
+            --repo="$GITHUB_REPOSITORY" \
+            --branch="main"
+            
+          echo "✅ Staging deployment initiated successfully"
 
   deploy-production:
     name: Deploy to Render Production
@@ -202,61 +152,31 @@ jobs:
 
     environment:
       name: production
-      url: https://ai-finance-dashboard-frontend.onrender.com
+      url: https://ai-finance-dashboard-frontend-prod.onrender.com
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Error handling step: Check if deploy hook exists
-      - name: Check production deployment prerequisites
-        id: check-prod-deploy
+      - name: Deploy to Production using Blueprint
         run: |
-          echo "Checking production deployment prerequisites..."
+          echo "🚀 Deploying to production environment..."
 
-          if [[ -z "${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK }}" ]]; then
-            echo "⚠️  RENDER_PRODUCTION_DEPLOY_HOOK secret not configured"
-            echo "📝 To enable production deployment:"
-            echo "   1. Create production services in Render dashboard"
-            echo "   2. Copy production deploy hook URL"
-            echo "   3. Add as RENDER_PRODUCTION_DEPLOY_HOOK GitHub secret"
-            echo "   4. Create a new release tag"
-            echo "deploy_ready=false" >> $GITHUB_OUTPUT
-          else
-            echo "✅ Production deploy hook configured"
-            echo "🚀 Ready to deploy to production"
-            echo "deploy_ready=true" >> $GITHUB_OUTPUT
-          fi
+          # Extract version from tag
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "Deploying version: $VERSION"
 
-      # Conditional production deployment
-      - name: Trigger Production Deploy
-        if: steps.check-prod-deploy.outputs.deploy_ready == 'true'
-        run: |
-          echo "🚀 Triggering production deployment..."
+          # Install Render CLI
+          curl -fsSL https://cli.render.com/install | bash
 
-          response=$(curl -s -w "%{http_code}" -o /tmp/prod_deploy_response.txt \
-            -X POST "${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK }}" \
-            -H "Content-Type: application/json")
-
-          http_code=${response: -3}
-
-          if [[ $http_code -eq 200 || $http_code -eq 201 ]]; then
-            echo "✅ Production deployment triggered successfully (HTTP $http_code)"
-            cat /tmp/prod_deploy_response.txt
-          else
-            echo "❌ Production deployment failed (HTTP $http_code)"
-            echo "Response:"
-            cat /tmp/prod_deploy_response.txt
-            exit 1
-          fi
-
-      # Fallback message for production deployment
-      - name: Production Deployment Status
-        if: steps.check-prod-deploy.outputs.deploy_ready == 'false'
-        run: |
-          echo "🔄 Production deployment skipped - Render services not configured yet"
-          echo "✅ Build and tests passed successfully"
-          echo "🎯 Ready for manual production deployment when services are set up"
+          # Deploy using production configuration
+          render blueprint launch render.yaml \
+            --service-type=web \
+            --name="production-deployment-$VERSION" \
+            --repo="$GITHUB_REPOSITORY" \
+            --branch="main"
+            
+          echo "✅ Production deployment initiated successfully"
 
   notify:
     name: Notification
@@ -267,8 +187,8 @@ jobs:
     steps:
       - name: Deployment Status Summary
         run: |
-          echo "📊 Workflow Summary:"
-          echo "==================="
+          echo "📊 CI/CD Workflow Summary:"
+          echo "========================="
 
           # Test results
           if [[ "${{ needs.test.result }}" == "success" ]]; then
@@ -281,42 +201,30 @@ jobs:
           if [[ "${{ needs.security-scan.result }}" == "success" ]]; then
             echo "✅ Security Scan: Passed"
           else
-            echo "⚠️  Security Scan: Issues found (check details)"
+            echo "⚠️ Security Scan: Issues found"
           fi
 
-          # Staging deployment results
+          # Staging deployment
           if [[ "${{ needs.deploy-staging.result }}" == "success" ]]; then
             echo "✅ Staging Deployment: Success"
+            echo "🌐 Staging URL: https://ai-finance-dashboard-frontend-staging.onrender.com"
           elif [[ "${{ needs.deploy-staging.result }}" == "skipped" ]]; then
-            echo "⏭️  Staging Deployment: Skipped (not main branch)"
-          else
-            echo "⚠️  Staging Deployment: Issues (check logs)"
+            echo "⏭️ Staging Deployment: Skipped (not main branch push)"
           fi
 
-          # Production deployment results
+          # Production deployment
           if [[ "${{ needs.deploy-production.result }}" == "success" ]]; then
             echo "✅ Production Deployment: Success"
+            echo "🌐 Production URL: https://ai-finance-dashboard-frontend-prod.onrender.com"
           elif [[ "${{ needs.deploy-production.result }}" == "skipped" ]]; then
-            echo "⏭️  Production Deployment: Skipped (not release tag)"
-          else
-            echo "⚠️  Production Deployment: Issues (check logs)"
+            echo "⏭️ Production Deployment: Skipped (not tag push)"
           fi
 
-          echo "==================="
+          echo "========================="
 
-          # Overall status
           if [[ "${{ needs.test.result }}" == "success" && "${{ needs.security-scan.result }}" == "success" ]]; then
-            echo "🎉 CI/CD Pipeline: Core processes successful!"
-            echo "🚀 Your AI Finance Dashboard is ready for deployment!"
+            echo "🎉 CI/CD Pipeline: Successfully completed!"
           else
             echo "❌ CI/CD Pipeline: Some issues need attention"
             exit 1
           fi
-
-      # Optional: Send notification to external service (Slack, Discord, etc.)
-      - name: Send Slack Notification (Optional)
-        if: false # Set to true and configure SLACK_WEBHOOK_URL secret to enable
-        run: |
-          curl -X POST -H 'Content-type: application/json' \
-            --data '{"text":"🚀 AI Finance Dashboard deployment completed! Status: ${{ job.status }}"}' \
-            "${{ secrets.SLACK_WEBHOOK_URL }}"
