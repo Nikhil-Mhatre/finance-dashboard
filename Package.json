@@ -1,0 +1,29 @@
+{
+  "name": "ai-finance-dashboard",
+  "version": "1.0.0",
+  "description": "AI-powered personal finance dashboard with real-time analytics",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"cd backend && pnpm dev\" \"cd frontend && pnpm dev\"",
+    "build": "pnpm build:backend && pnpm build:frontend",
+    "build:backend": "cd backend && pnpm build",
+    "build:frontend": "cd frontend && pnpm build",
+    "start": "concurrently \"cd backend && pnpm start\" \"cd frontend && pnpm start\"",
+    "version:patch": "npm version patch && git push && git push --tags",
+    "version:minor": "npm version minor && git push && git push --tags",
+    "version:major": "npm version major && git push && git push --tags"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "finance",
+    "ai",
+    "dashboard",
+    "nextjs",
+    "typescript",
+    "postgresql"
+  ],
+  "author": "Nikhil Mhatre",
+  "license": "MIT"
+}
