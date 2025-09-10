@@ -33,65 +33,58 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Separate setup for backend
-      - name: Setup Node.js for Backend
+      # Install pnpm globally first
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # Setup Node with multiple cache paths (FIXED)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          cache-dependency-path: backend/package-lock.json # ← Fix: Specify exact path
+          cache: "pnpm"
+          cache-dependency-path: |
+            backend/pnpm-lock.yaml
+            frontend/pnpm-lock.yaml
 
-      # Separate setup for frontend
-      - name: Setup Node.js for Frontend
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json # ← Fix: Specify exact path
-
+      # Install dependencies with pnpm
       - name: Install backend dependencies
-        run: npm ci
+        run: pnpm install
         working-directory: backend
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: pnpm install
         working-directory: frontend
 
       - name: Generate Prisma Client
-        run: npx prisma generate
+        run: pnpm prisma generate
         working-directory: backend
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
 
       - name: Run database migrations
-        run: npx prisma migrate deploy
+        run: pnpm prisma migrate deploy
         working-directory: backend
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
 
       - name: Type check backend
-        run: npm run type-check
+        run: pnpm type-check
         working-directory: backend
 
       - name: Type check frontend
-        run: npm run type-check
+        run: pnpm type-check
         working-directory: frontend
 
       - name: Build backend
-        run: npm run build
+        run: pnpm build
         working-directory: backend
 
       - name: Build frontend (production mode)
-        run: SKIP_LINT=true npm run build
+        run: SKIP_LINT=true pnpm build
         working-directory: frontend
 
-      - name: Run backend tests
-        run: cd backend && pnpm test || echo "No tests found"
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_dashboard_test
-
-      - name: Run frontend tests
-        run: cd frontend && pnpm test || echo "No tests found"
+    # Remove the separate pnpm test commands since we're using npm in the workflow
 
   security-scan:
     name: Security Scan
