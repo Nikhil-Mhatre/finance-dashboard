@@ -20,6 +20,7 @@ import dashboardRoutes from "./routes/dashboard";
 import transactionRoutes from "./routes/transactions";
 import accountRoutes from "./routes/accounts";
 import aiRoutes from "./routes/ai";
+import { redisService } from "./services/redisService";
 
 // Load environment variables
 dotenv.config();
@@ -53,6 +54,19 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 /**
+ * Initialize Redis connection
+ */
+async function initializeRedis() {
+  try {
+    await redisService.connect();
+    console.log("🎯 Redis service initialized");
+  } catch (error) {
+    console.error("❌ Redis initialization failed:", error);
+    console.warn("⚠️ Continuing without Redis - caching disabled");
+  }
+}
+
+/**
  * Health check endpoint - Updated for CI/CD testing
  * @route GET /health
  * @returns {Object} Server status and database connection
@@ -62,26 +76,33 @@ app.get("/health", async (req, res) => {
     // Test database connection
     await prisma.$queryRaw`SELECT 1`;
 
+    // Test Redis connection
+    const redisHealth = await redisService.healthCheck();
+
     res.status(200).json({
       status: "success",
       message: "AI Finance Dashboard API is running smoothly! 🚀",
       timestamp: new Date().toISOString(),
-      database: "connected",
+      services: {
+        database: "connected",
+        redis: redisHealth.status,
+      },
       environment: process.env.NODE_ENV || "development",
-      version: "2.1.0", // Updated version for testing
+      version: "2.2.0",
       uptime: process.uptime(),
       features: {
         authentication: true,
         dashboard: true,
         transactions: true,
         ai_insights: true,
-        real_time: "coming_soon",
+        redis_caching: redisHealth.connected,
+        real_time: redisHealth.connected,
       },
     });
   } catch (error) {
     res.status(500).json({
       status: "error",
-      message: "Database connection failed",
+      message: "Service health check failed",
       timestamp: new Date().toISOString(),
     });
   }
@@ -90,6 +111,7 @@ app.get("/health", async (req, res) => {
 /**
  * API Routes
  */
+
 app.use("/api", (req, res, next) => {
   console.log(`📊 API Request: ${req.method} ${req.path}`);
   next();
@@ -175,6 +197,7 @@ app.use(
  */
 async function startServer() {
   try {
+    await initializeRedis();
     await prisma.$connect();
     console.log("🗄️  Connected to PostgreSQL database");
 
@@ -182,6 +205,7 @@ async function startServer() {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`🔧 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`⚡ Redis: ${redisService ? "Connected" : "Disabled"}`);
       console.log("---");
       console.log("🎯 Available API endpoints:");
       console.log("Authentication:");

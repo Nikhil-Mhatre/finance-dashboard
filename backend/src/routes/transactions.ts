@@ -10,6 +10,7 @@ import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { redisService } from "../services/redisService";
 
 const router: Router = Router();
 const prisma = new PrismaClient();
@@ -110,6 +111,20 @@ router.post("/", authenticateToken, async (req: AuthRequest, res) => {
       `💳 Transaction created successfully: ${validatedData.description} - $${
         validatedData.amount
       } [${new Date().toISOString()}]`
+    );
+
+    // Invalidate user caches since data changed
+    await redisService.invalidateUserCache(userId);
+
+    // Publish real-time update
+    await redisService.publishUpdate("user-updates", {
+      userId,
+      type: "NEW_TRANSACTION",
+      data: transaction,
+    });
+
+    console.log(
+      `✅ Transaction created and caches invalidated: ${validatedData.description}`
     );
 
     return res.status(201).json({
