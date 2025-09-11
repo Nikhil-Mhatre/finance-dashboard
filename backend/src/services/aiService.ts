@@ -8,6 +8,7 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PrismaClient } from "@prisma/client";
+import { redisService } from "./redisService";
 
 const prisma = new PrismaClient();
 
@@ -46,6 +47,13 @@ export async function generateFinancialInsights(
 ): Promise<FinancialInsight[]> {
   try {
     console.log(`🤖 Generating AI insights for user: ${userId}`);
+
+    // Check cache first
+    const cachedInsights = await redisService.getAIInsights(userId);
+    if (cachedInsights) {
+      console.log(`🎯 Using cached AI insights for user: ${userId}`);
+      return cachedInsights;
+    }
 
     // Check if Gemini API key is set
     const apiKey = process.env.GEMINI_API_KEY;
@@ -113,6 +121,9 @@ export async function generateFinancialInsights(
     // Parse and structure AI response
     const insights = parseAIResponse(aiResponse, userId);
     console.log(`🎯 Parsed ${insights.length} insights`);
+
+    // Cache the results
+    await redisService.cacheAIInsights(userId, insights);
 
     // Save insights to database
     await saveInsightsToDatabase(insights, userId);

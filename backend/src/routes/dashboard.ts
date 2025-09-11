@@ -9,6 +9,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { redisService } from "../services/redisService";
 
 const router: Router = Router();
 const prisma = new PrismaClient();
@@ -23,6 +24,18 @@ const prisma = new PrismaClient();
 router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
+
+    // Try to get from cache first
+    const cachedStats = await redisService.getDashboardData(userId);
+    if (cachedStats) {
+      return res.json({
+        status: "success",
+        data: cachedStats,
+        source: "cache",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     const now = new Date();
 
     // Use last 30 days instead of current calendar month for more meaningful stats
@@ -155,9 +168,17 @@ router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
     console.log(`📊 Last 30 days expenses: $${recentExpenses}`);
     console.log(`📊 Current month expenses: $${monthlyExpenses}`);
 
+    // Cache the results for 5 minutes
+    await redisService.cacheDashboardData(userId, stats, 300);
+
+    console.log(
+      `📊 Dashboard stats generated and cached for user: ${req.user!.email}`
+    );
+
     res.json({
       status: "success",
       data: stats,
+      source: "database",
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
