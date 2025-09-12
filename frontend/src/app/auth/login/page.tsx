@@ -1,278 +1,112 @@
+// src/app/auth/login/page.tsx - COMPLETE REPLACEMENT
 /**
- * Login Page Component
- * User authentication interface with form validation
- *
- * @author Finance Dashboard Team
- * @version 1.0.0
+ * Google OAuth Login Page
+ * Simple Google Sign-In interface
  */
 
 "use client";
 
-import React, { useState, JSX } from "react";
+import React, { JSX } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  EyeIcon,
-  EyeSlashIcon,
-  LockClosedIcon,
-  EnvelopeIcon,
-} from "@heroicons/react/24/outline";
-import { authApi } from "@/lib/api";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
 import AuthGuard from "@/components/AuthGuard";
+import { useAuth } from "@/contexts/AuthContext";
 
-/**
- * Form data interface
- */
-interface LoginFormData {
-  email: string;
-  password: string;
-}
-
-/**
- * Login Page Component
- *
- * @returns {JSX.Element} Login form interface
- */
 export default function LoginPage(): JSX.Element {
-  const router = useRouter();
-  const { login } = useAuth();
-  const [formData, setFormData] = useState<LoginFormData>({
-    email: "",
-    password: "",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Handle form input changes
-   *
-   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event
-   */
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error when user starts typing
-    if (error) setError(null);
-  };
-
-  /**
-   * Handle form submission
-   *
-   * @param {React.FormEvent} e - Form submit event
-   */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await login(formData.email, formData.password);
-      // login function handles redirect automatically
-    } catch (err: any) {
-      console.error("❌ Login error:", err);
-      setError(err.message || "An error occurred during login");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Demo login for quick testing
-   */
-  const handleDemoLogin = () => {
-    setFormData({
-      email: "demo@example.com",
-      password: "password123",
-    });
-  };
+  const { loginWithGoogle, isLoading } = useAuth();
 
   return (
-    <AuthGuard requireAuth={false}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <AuthGuard>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           {/* Header */}
           <div className="text-center">
-            <div className="flex justify-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">AI</span>
+            <div className="flex justify-center items-center space-x-2 mb-6">
+              <div className="bg-blue-600 text-white p-3 rounded-xl">
+                <span className="text-2xl font-bold">AI</span>
               </div>
+              <span className="text-2xl font-bold text-gray-900">
+                Finance Dashboard
+              </span>
             </div>
-            <h2 className="mt-6 text-3xl font-bold text-gray-900">
-              Welcome back
-            </h2>
+            <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Sign in to your AI Finance Dashboard
+              Sign in with your Google account to continue
             </p>
           </div>
 
-          {/* Login Form */}
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            {/* Error Alert */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-red-400"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">
-                      {error}
-                    </h3>
-                  </div>
-                </div>
-              </div>
-            )}
+          {/* OAuth Login Card */}
+          <div className="bg-white rounded-xl shadow-lg p-8 space-y-6">
+            {/* Google Sign In Button */}
+            <button
+              onClick={loginWithGoogle}
+              disabled={isLoading}
+              className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
+              </svg>
+              {isLoading ? "Signing in..." : "Continue with Google"}
+            </button>
 
-            <div className="space-y-4">
-              {/* Email Input */}
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500"
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
+            {/* Features Preview */}
+            <div className="mt-8 space-y-4">
+              <h3 className="text-sm font-medium text-gray-900 text-center">
+                What you'll get access to:
+              </h3>
+              <ul className="text-xs text-gray-600 space-y-2">
+                <li className="flex items-center">
+                  <span className="text-green-500 mr-2">✓</span>
+                  AI-powered financial insights
+                </li>
+                <li className="flex items-center">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Real-time analytics and charts
+                </li>
+                <li className="flex items-center">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Secure transaction tracking
+                </li>
+                <li className="flex items-center">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Smart budget recommendations
+                </li>
+              </ul>
             </div>
+          </div>
 
-            {/* Demo Login Button */}
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                className="text-sm text-blue-600 hover:text-blue-700 underline"
+          {/* Footer */}
+          <div className="text-center">
+            <p className="text-xs text-gray-500">
+              By signing in, you agree to our{" "}
+              <Link
+                href="/terms"
+                className="font-medium text-blue-600 hover:text-blue-500"
               >
-                Use demo credentials
-              </button>
-            </div>
-
-            {/* Submit Button */}
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={cn(
-                  "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition-colors duration-200",
-                  isLoading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                )}
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="font-medium text-blue-600 hover:text-blue-500"
               >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing in...
-                  </div>
-                ) : (
-                  "Sign in"
-                )}
-              </button>
-            </div>
-
-            {/* Register Link */}
-            <div className="text-center">
-              <span className="text-sm text-gray-600">
-                Don't have an account?{" "}
-                <Link
-                  href="/auth/register"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Sign up here
-                </Link>
-              </span>
-            </div>
-          </form>
-
-          {/* Features Preview */}
-          <div className="mt-8 border-t border-gray-200 pt-6">
-            <h3 className="text-sm font-medium text-gray-900 text-center mb-4">
-              What you'll get access to:
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                AI-powered insights
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                Real-time analytics
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                Budget tracking
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
-                Investment monitoring
-              </div>
-            </div>
+                Privacy Policy
+              </Link>
+            </p>
           </div>
         </div>
       </div>

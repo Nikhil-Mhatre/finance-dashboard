@@ -1,26 +1,31 @@
+<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
+
+# Refactor and improvise the attached README.md file as latest implementation of Google oAuth.
+
+Here is an updated README.md tailored to the latest Google OAuth session-based implementation, Redis-backed sessions, and your current codebase.
+
 # AI Finance Dashboard
 
-> Modern personal finance management platform with AI-powered insights, advanced analytics, and real-time dashboards.
+Modern personal finance management platform with AI-powered insights, advanced analytics, and real-time dashboards. Now secured with Google OAuth 2.0 and Redis-backed session authentication.
 
 ## Overview
 
-**AI Finance Dashboard** is a fullstack web application that helps users manage personal finances, track transactions, analyze spending, and receive actionable recommendations powered by Google Gemini AI. It features intuitive dashboards, interactive charts, robust authentication, and optimized performance using state-of-the-art technologies.
+AI Finance Dashboard is a full‑stack web application to manage personal finances, track transactions, analyze spending, and receive actionable recommendations powered by Google Gemini AI. It features Google OAuth sign-in, session-based auth with Redis, intuitive dashboards, interactive charts, and optimized performance.
 
 ---
 
 ## Features
 
-- **User Authentication:** Secure registration and login with JWT and bcrypt hashing.
-- **AI Financial Insights:** Automated spending analysis, budget recommendations, and risk assessments using Gemini AI.
-- **Dashboard Analytics:** Real-time overview of balances, income, expenses, and investments.
-- **Interactive Charts:** Visualize financial trends and spending breakdowns using Chart.js.
-- **Transaction Management:** Easily record income and expenses with rich categorization.
-- **Account Management:** Create and view multiple financial accounts.
-- **Budget Tracking:** Set goals and monitor utilization.
-- **Alerts \& Notifications:** Get notified about budget limits, unusual spending, and opportunities.
-- **Real-Time Updates:** Instant data sync using Redis Pub/Sub and WebSockets.
-- **Secure \& Responsive:** Modern UI with dark mode, Tailwind CSS, Helmet/CORS security.
-- **TypeScript Everywhere:** End-to-end type safety for data models and API responses.
+- Google OAuth 2.0 sign-in with session-based auth (no passwords to manage)
+- AI financial insights using Gemini (spending patterns, budgets, risks)
+- Dashboard analytics: balances, income, expenses, investments
+- Interactive charts (spending breakdowns, top categories)
+- Transaction management with rich categorization
+- Account management (checking, savings, credit card, etc.)
+- Budget tracking and alerting
+- Real-time updates via Redis Pub/Sub
+- Secure and responsive UI (Helmet, CORS, Tailwind)
+- End-to-end TypeScript types
 
 ---
 
@@ -28,24 +33,26 @@
 
 ### Backend
 
-- **Express.js** (TypeScript)
-- **Prisma ORM** + **PostgreSQL**
-- **Google Gemini AI API**
-- **Redis** (Caching \& Pub/Sub)
-- **JWT Authentication \& bcrypt**
-- **Zod** (Validation)
-- **Morgan, Helmet, Compression, CORS**
+- Express.js (TypeScript)
+- Prisma ORM + PostgreSQL
+- Google Gemini AI API
+- Redis
+  - node-redis for session store
+  - ioredis for application caching and Pub/Sub
+- Passport + passport-google-oauth20
+- express-session
+- Zod validation
+- Helmet, CORS, Compression, Morgan
 
 ### Frontend
 
-- **Next.js 15+** (App Router)
-- **React 19+**
-- **Tailwind CSS v4 / Headless UI**
-- **Chart.js / react-chartjs-2**
-- **Socket.io Client (Real-Time updates)**
-- **Axios** (API client)
-- **React Context \& Hooks**
-- **TypeScript**
+- Next.js 15+ (App Router)
+- React 19+
+- Tailwind CSS v4 / Headless UI / Heroicons
+- Chart.js / react-chartjs-2
+- Axios (withCredentials enabled)
+- React Context and hooks
+- TypeScript
 
 ---
 
@@ -54,22 +61,22 @@
 ```plaintext
 /
 ├── backend/            # Express API (src/, prisma/, services/, routes/)
-├── frontend/           # Next.js app (src/pages, components, contexts, lib)
-├── package.json        # (frontend and backend each, or unified - see your repo)
+├── frontend/           # Next.js app (src/app, components, contexts, lib)
+├── package.json        # per app (or unified), scripts and config
 ├── pnpm-lock.yaml
 ├── next.config.ts      # Frontend config
 ├── tsconfig.json       # TypeScript config
 ├── README.md           # << You are here!
 ```
 
-Main folders may include:
+Key folders:
 
-- `/src` (shared for API/routes/components/services as per each app)
-- `/prisma` (schema \& seed scripts)
-- `/services` (AI, Redis, business logic)
-- `/routes` (Express API endpoints)
-- `/contexts` (React Context API for authentication)
-- `/components` (React UI components)
+- /src/routes Express API routes (auth, dashboard, accounts, transactions, ai)
+- /src/config OAuth and configuration (Google strategy)
+- /src/services Redis service, AI service
+- /src/middleware Auth middleware (session-based)
+- /prisma Schema and seed scripts
+- /frontend/src App router, components, contexts, lib
 
 ---
 
@@ -77,143 +84,220 @@ Main folders may include:
 
 ### Prerequisites
 
-- **Node.js** ≥ 18.x
-- **pnpm** or **npm** (per your configuration)
-- **PostgreSQL** instance
-- (Optional) **Redis** instance (local or managed)
-- Google Gemini AI API key
+- Node.js ≥ 18.x
+- pnpm or npm
+- PostgreSQL instance
+- Redis instance (local or managed)
+- Google Cloud OAuth 2.0 Client
+- Google Gemini API key
 
-### 1. Setup Environment
+### 1) Environment Variables
 
-Copy `.env.example` to `.env` and fill in values for:
+Copy .env.example to .env and set:
 
 ```env
+# Core
 DATABASE_URL=postgres://user:password@host:port/dbname
 REDIS_URL=redis://localhost:6379
+
+# Sessions and OAuth
+SESSION_SECRET=your_super_secret_session_key
+GOOGLE_CLIENT_ID=your_google_oauth_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+FRONTEND_URL=http://localhost:3000
+CORS_ORIGIN=http://localhost:3000
+
+# AI (Gemini)
 GEMINI_API_KEY=your_gemini_api_key
+
+# Frontend API
 NEXT_PUBLIC_API_URL=http://localhost:3001
-JWT_SECRET=your_super_secret_key
 ```
 
-### 2. Install Dependencies
+Notes:
+
+- Use SESSION_SECRET with high entropy.
+- For local dev over HTTP, cookie.secure=false and sameSite=lax are used automatically by the server.
+
+### 2) Google Cloud Console Setup
+
+- Create/select a project at Google Cloud Console.
+- APIs \& Services → Credentials → Create OAuth 2.0 Client (Web application).
+- Authorized JavaScript origins:
+  - http://localhost:3000
+- Authorized redirect URIs (must match server mount path):
+  - http://localhost:3001/api/auth/google/callback
+
+Ensure the callback path exactly matches /api/auth/google/callback.
+
+### 3) Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-### 3. Database Setup
+Make sure the backend has:
 
-#### Migrate \& Seed
+- passport, passport-google-oauth20
+- express-session, connect-redis
+- redis (node-redis v4) for session store
+- ioredis for application caching
 
-```bash
-pnpm run migrate:dev     # Runs Prisma migrations (backend)
-pnpm run seed            # Seeds initial data
-```
-
-Or use available scripts per your `package.json`.
-
-### 4. Start Backend
+### 4) Database Setup
 
 ```bash
-pnpm run dev       # Runs backend in dev mode with tsx & nodemon
+pnpm run migrate:dev     # Prisma migrations
+pnpm run seed            # Optional: seed initial data
 ```
 
-### 5. Start Frontend
+### 5) Run Backend
 
 ```bash
-pnpm run dev       # Runs Next.js frontend
+pnpm run dev    # tsx + nodemon dev server at http://localhost:3001
 ```
 
-Visit `http://localhost:3000` in your browser.
+Health check:
+
+- GET http://localhost:3001/health
+
+### 6) Run Frontend
+
+```bash
+pnpm run dev    # Next.js at http://localhost:3000
+```
 
 ---
 
-## API Documentation
+## Authentication
 
-Key API endpoints:
+The app uses Google OAuth with session-based authentication:
 
-| Path                                      | Description                 |
-| :---------------------------------------- | :-------------------------- |
-| `POST /api/auth/register`                 | Register new user           |
-| `POST /api/auth/login`                    | Login \& obtain JWT         |
-| `GET /api/auth/profile`                   | Get profile info            |
-| `GET /api/dashboard/stats`                | Overview statistics         |
-| `GET /api/dashboard/analytics/categories` | Category insights           |
-| `POST /api/transactions`                  | Record transaction          |
-| `GET /api/transactions`                   | List paginated transactions |
-| `GET /api/accounts`                       | Get all accounts            |
-| `POST /api/accounts`                      | Create new account          |
-| `GET /api/ai/insights`                    | AI-powered recommendations  |
+- Session store: Redis via connect-redis + node-redis (separate from ioredis)
+- OAuth endpoints:
+  - GET /api/auth/google — start Google OAuth
+  - GET /api/auth/google/callback — OAuth redirect/callback
+  - GET /api/auth/me — current authenticated user
+  - GET /api/auth/status — session status
+  - POST /api/auth/logout — clear session
 
----
+Frontend
 
-## Customization
+- Axios is configured with withCredentials: true to send cookies.
+- CORS is configured on the server with credentials: true and exact origin.
 
-- **Theming:** Tailwind CSS + CSS variables for dark mode, easy extension in `globals.css`.
-- **Component Reusability:** Modular React components and context providers.
-- **Performance:** SWC minification, standalone Next.js builds, Redis caching.
-- **Security:** Helmet, CORS policies, strict header configuration.
+Linking users
+
+- If a user with the same email exists, the Google account is linked (adds googleId, avatar).
+- Otherwise, a new user is created and default accounts are provisioned.
 
 ---
 
-## Contributing
+## API Endpoints
 
-Pull requests and issues welcome!
+Key API endpoints (condensed):
 
-- Ensure code follows existing patterns and conventions (TypeScript, Tailwind CSS, Prisma).
-- Run lint and type-check scripts before submitting:
+Authentication (Google OAuth)
 
-```bash
-pnpm run lint
-pnpm run type-check
-```
+- GET /api/auth/google — initiate OAuth
+- GET /api/auth/google/callback — OAuth callback
+- GET /api/auth/me — current user
+- GET /api/auth/status — auth status
+- POST /api/auth/logout — logout
+
+Dashboard
+
+- GET /api/dashboard/stats — summary metrics
+- GET /api/dashboard/transactions/recent — recent transactions
+- GET /api/dashboard/analytics/categories — category breakdown
+
+Transactions
+
+- GET /api/transactions — paginated list with filters
+- POST /api/transactions — create transaction
+
+Accounts
+
+- GET /api/accounts — list accounts
+- POST /api/accounts — create account
+- GET /api/accounts/:id — account by id
+
+AI Insights
+
+- GET /api/ai/insights — AI recommendations
+- POST /api/ai/analyze — generate fresh insights
+- GET /api/ai/summary — insights summary
+
+---
+
+## Sessions and Redis
+
+- Session store uses node-redis v4 client with connect-redis.
+- Application caching and Pub/Sub use ioredis (redisService).
+- Do not pass an ioredis client into connect-redis v7; use a node-redis client for sessions to avoid Redis “ERR syntax error”.
+
+---
+
+## Frontend Integration
+
+- Axios base URL: NEXT_PUBLIC_API_URL (default http://localhost:3001)
+- Axios withCredentials: true (cookies)
+- AuthContext manages session state via /api/auth/status and /api/auth/me
+- Login flow triggers window.location = `${API_BASE_URL}/api/auth/google`
+
+---
+
+## Security
+
+- Helmet for HTTP headers
+- CORS with explicit origin and credentials
+- Session cookies: httpOnly, sameSite=lax (dev) or none (prod + HTTPS)
+- No password storage; Google’s OAuth handles identity
+- Zod validation on inputs
+
+---
+
+## Scripts
+
+Common scripts (may vary based on your package.json):
+
+- pnpm run dev — start backend dev server
+- pnpm run build — compile TypeScript
+- pnpm run migrate:dev — apply Prisma migrations
+- pnpm run seed — seed database
+- pnpm run lint — lint code
+- pnpm run type-check — TypeScript checks
+
+---
+
+## Troubleshooting
+
+- redirect_uri_mismatch
+  - Ensure callbackURL is exactly /api/auth/google/callback in code.
+  - Ensure Google Console Authorized redirect URI is http://localhost:3001/api/auth/google/callback.
+- req.isAuthenticated is not a function
+  - Ensure middleware order: session → passport.initialize() → passport.session() → routes.
+- Redis ReplyError: ERR syntax error on SET
+  - Use node-redis as the session store client; don’t pass an ioredis client to connect-redis v7.
+- 401 after login on frontend
+  - Ensure CORS credentials:true on server and axios withCredentials:true on client.
+  - Ensure cookie sameSite/secure is set correctly for the environment.
 
 ---
 
 ## License
 
-MIT – Free for personal and commercial use. See `LICENSE` for details.
-
----
+MIT – Free for personal and commercial use. See LICENSE for details.
 
 ## Credits
 
-Developed by the **Finance Dashboard Team**
-Powered by **Google Gemini AI**, **Express.js**, **Next.js**, and **Tailwind CSS**.
-
----
+Developed by the Finance Dashboard Team
+Powered by Google Gemini AI, Google OAuth, Express.js, Next.js, and Tailwind CSS.
 
 ## Screenshots
 
-_Add your dashboard, AI insights, and analytics page screenshots here for visual reference._
-
----
-
-## Contact
-
-For support or business inquiries, reach out via GitHub Issues or email listed in the repo.
-
----
+Add dashboard, AI insights, and analytics screenshots here.
+<span style="display:none">[^1]</span>
 
 <div style="text-align: center">⁂</div>
 
-[^1]: next.config.ts
-[^2]: package.json
-[^3]: tsconfig.json
-[^4]: globals.css
-[^5]: layout.tsx
-[^6]: page.tsx
-[^7]: layout.tsx
-[^8]: page.tsx
-[^9]: page.tsx
-[^10]: page.tsx
-[^11]: page.tsx
-[^12]: index.ts
-[^13]: api.ts
-[^14]: utils.ts
-[^15]: AuthContext.tsx
-[^16]: AIInsights.tsx
-[^17]: AuthGuard.tsx
-[^18]: FinancialCharts.tsx
-[^19]: LoadingScreen.tsx
-[^20]: TransactionForm.tsx
+[^1]: README.md

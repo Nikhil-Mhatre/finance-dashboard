@@ -1,16 +1,10 @@
+// src/middleware/auth.ts - COMPLETE REPLACEMENT
 /**
- * Authentication Middleware
- * Verifies JWT tokens and protects routes
- *
- * @author Finance Dashboard Team
- * @version 1.0.0
+ * Session-based Authentication Middleware
+ * Replaces JWT with session-based authentication
  */
 
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
 
 /**
  * Extended Request interface with user information
@@ -21,79 +15,34 @@ export interface AuthRequest extends Request {
     email: string;
     firstName?: string | null;
     lastName?: string | null;
+    avatar?: string | null;
   };
 }
 
 /**
- * JWT Authentication Middleware
- * Verifies JWT token and adds user information to request object
- *
- * @param {AuthRequest} req - Express request object
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next function
+ * Session Authentication Middleware
+ * Verifies user session and adds user information to request object
  */
-export async function authenticateToken(
+export async function authenticateSession(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    // Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
-
-    if (!token) {
+    if (!req.isAuthenticated()) {
       res.status(401).json({
         status: "error",
-        message: "Access token required",
+        message: "Authentication required. Please login with Google.",
         timestamp: new Date().toISOString(),
       });
       return;
     }
 
-    // Verify JWT token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "fallback_secret_key"
-    ) as { userId: string };
-
-    // Find user in database
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
-
-    if (!user) {
-      res.status(404).json({
-        status: "error",
-        message: "User not found",
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
-    // Add user to request object
-    req.user = user;
-    console.log(`🔐 Authenticated user: ${user.email}`);
-
+    // User is authenticated via session
+    console.log(`🔐 Authenticated user: ${(req.user as any)?.email}`);
     next();
   } catch (error) {
     console.error("❌ Auth middleware error:", error);
-
-    if (error instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({
-        status: "error",
-        message: "Invalid or expired token",
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
     res.status(500).json({
       status: "error",
       message: "Authentication server error",
@@ -104,45 +53,16 @@ export async function authenticateToken(
 
 /**
  * Optional Authentication Middleware
- * Adds user information if token is valid, but doesn't require authentication
- *
- * @param {AuthRequest} req - Express request object
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next function
+ * Adds user information if authenticated, but doesn't require authentication
  */
 export async function optionalAuth(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(" ")[1];
-
-    if (token) {
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || "fallback_secret_key"
-      ) as { userId: string };
-
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-        },
-      });
-
-      if (user) {
-        req.user = user;
-      }
-    }
-
-    next();
-  } catch (error) {
-    // Silently continue without authentication
-    next();
-  }
+  // User information already available in req.user if authenticated
+  next();
 }
+
+// Export aliases for compatibility
+export const authenticateToken = authenticateSession;

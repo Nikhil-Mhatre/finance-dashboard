@@ -92,7 +92,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   /**
    * Update current time every minute
    * Used for displaying live time in the header
@@ -260,6 +260,38 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <BellIcon className="w-5 h-5" />
                 {/* Notification badge */}
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+
+              {/* User Avatar and Info */}
+              {user && (
+                <div className="flex items-center space-x-3">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={`${user.firstName || user.email}`}
+                      className="w-8 h-8 rounded-full ring-2 ring-blue-100"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
+                      {(user.firstName?.[0] || user.email[0]).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="hidden md:block">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.firstName
+                        ? `${user.firstName} ${user.lastName || ""}`
+                        : user.email}
+                    </p>
+                    <p className="text-xs text-gray-500">{formatTime()}</p>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={logout}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+              >
+                <ArrowRightEndOnRectangleIcon className="w-4 h-4 mr-1" />
+                Sign Out
               </button>
             </div>
           </header>

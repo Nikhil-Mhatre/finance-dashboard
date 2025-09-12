@@ -1,18 +1,23 @@
 /**
  * Main server entry point for AI-Powered Personal Finance Dashboard
- * Handles API routes, middleware setup, and WebSocket connections
+ * Handles API routes, middleware setup, and session management
  *
  * @author Finance Dashboard Team
  * @version 1.0.0
  */
 
 import express from "express";
+import session from "express-session";
+import { RedisStore } from "connect-redis";
+import passport from "passport";
+import { configureGoogleOAuth } from "./config/oauth";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import compression from "compression";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
+import { createClient } from "redis";
 
 // Import routes
 import authRoutes from "./routes/auth";
@@ -31,6 +36,22 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
+
+// Initialize OAuth before other middleware
+configureGoogleOAuth();
+
+/**
+ * Initialize Redis connection and session store
+ */
+async function initializeRedis() {
+  try {
+    await redisService.connect();
+    console.log("🎯 Redis service initialized");
+  } catch (error) {
+    console.error("❌ Redis initialization failed:", error);
+    console.warn("⚠️ Continuing without Redis - sessions will use memory");
+  }
+}
 
 /**
  * Middleware Configuration
@@ -53,18 +74,28 @@ app.use(morgan("combined"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-/**
- * Initialize Redis connection
- */
-async function initializeRedis() {
-  try {
-    await redisService.connect();
-    console.log("🎯 Redis service initialized");
-  } catch (error) {
-    console.error("❌ Redis initialization failed:", error);
-    console.warn("⚠️ Continuing without Redis - caching disabled");
-  }
-}
+// Session middleware (add after compression, before routes)
+app.use(
+  session({
+    store: new RedisStore({
+      client: redisService.getOAuthRedisClient, // Use your existing Redis client!
+      prefix: "sess:", // Optional: prefix for session keys in Redis
+    }),
+    secret: process.env.SESSION_SECRET || "your-session-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    },
+    name: "finance.sid",
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 /**
  * Health check endpoint - Updated for CI/CD testing

@@ -7,9 +7,11 @@
  */
 
 import Redis from "ioredis";
+import { createClient, RedisClientType } from "redis";
 
 class RedisService {
-  private client: Redis;
+  public client: Redis;
+  public OAuthRedisClient: RedisClientType;
   private isConnected: boolean = false;
 
   constructor() {
@@ -17,6 +19,10 @@ class RedisService {
       //   retryDelayOnFailover: 100,
       //   maxRetriesPerRequest: 3,
       lazyConnect: true,
+    });
+
+    this.OAuthRedisClient = createClient({
+      url: process.env.REDIS_URL || "redis://localhost:6379",
     });
 
     this.setupEventHandlers();
@@ -28,21 +34,40 @@ class RedisService {
       this.isConnected = true;
     });
 
+    this.OAuthRedisClient.on("connect", (err) =>
+      console.error("Redis oAuth client connected sucessfully:", err)
+    );
+
     this.client.on("error", (error) => {
       console.error("❌ Redis connection error:", error);
       this.isConnected = false;
     });
 
+    this.OAuthRedisClient.on("error", (err) =>
+      console.error("Redis session client error:", err)
+    );
+
     this.client.on("close", () => {
       console.log("⚠️ Redis connection closed");
       this.isConnected = false;
     });
+    this.OAuthRedisClient.on("close", (err) =>
+      console.error("Redis oAuth client connection closed:", err)
+    );
   }
 
   async connect() {
     if (!this.isConnected) {
       await this.client.connect();
+      await this.OAuthRedisClient.connect();
     }
+  }
+
+  /**
+   * Get Redis client for external use (like connect-redis)
+   */
+  get getOAuthRedisClient(): RedisClientType {
+    return this.OAuthRedisClient;
   }
 
   // Cache user dashboard data

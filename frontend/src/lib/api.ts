@@ -12,6 +12,7 @@ import { ApiResponse, PaginatedResponse } from "@/types";
 /**
  * API client configuration
  */
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 /**
@@ -21,25 +22,14 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // 30 seconds timeout
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-/**
- * Request interceptor to add authentication token
- * Automatically includes JWT token in all requests if available
- */
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage (we'll implement auth later)
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     console.log(
       `🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`
     );
@@ -51,10 +41,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-/**
- * Response interceptor for global error handling
- * Handles common HTTP errors and token expiration
- */
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     console.log(`✅ API Response: ${response.status} ${response.config.url}`);
@@ -69,12 +55,8 @@ apiClient.interceptors.response.use(
 
     // Handle authentication errors
     if (error.response?.status === 401) {
-      // Clear invalid token
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("auth_token");
-        // Redirect to login page (we'll implement this later)
-        window.location.href = "/auth/login";
-      }
+      // Redirect to Google OAuth
+      window.location.href = `${API_BASE_URL}/auth/google`;
     }
 
     return Promise.reject(error);
@@ -130,49 +112,30 @@ export const healthApi = {
   check: () => apiRequest<ApiResponse>("/health"),
 };
 
-/**
- * Authentication API endpoints
- * Handles user registration, login, and token management
- */
 export const authApi = {
   /**
-   * User login with credentials
-   * @param {object} credentials - User email and password
-   * @returns {Promise<ApiResponse>} Authentication token and user data
+   * Check current authentication status
+   * @returns {Promise<ApiResponse>}
    */
-  login: (credentials: { email: string; password: string }) =>
-    apiRequest<ApiResponse>("/api/auth/login", {
-      method: "POST",
-      data: credentials,
-    }),
-
-  /**
-   * Register new user account
-   * @param {object} userData - User registration information
-   * @returns {Promise<ApiResponse>} Created user data
-   */
-  register: (userData: {
-    email: string;
-    password: string;
-    firstName?: string;
-    lastName?: string;
-  }) =>
-    apiRequest<ApiResponse>("/api/auth/register", {
-      method: "POST",
-      data: userData,
-    }),
+  getStatus: () => apiRequest<ApiResponse>("/api/auth/status"),
 
   /**
    * Get current user profile
-   * @returns {Promise<ApiResponse>} Current user information
+   * @returns {Promise<ApiResponse>}
    */
-  getProfile: () => apiRequest<ApiResponse>("/api/auth/profile"),
+  getProfile: () => apiRequest<ApiResponse>("/api/auth/me"),
 
   /**
-   * Logout user and invalidate token
-   * @returns {Promise<ApiResponse>} Logout confirmation
+   * Initiate Google OAuth login
    */
-  logout: () => apiRequest<ApiResponse>("/api/auth/logout", { method: "POST" }),
+  loginWithGoogle: () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
+  },
+
+  /**
+   * Logout user
+   */
+  logout: () => apiRequest("/api/auth/logout", { method: "POST" }),
 };
 
 /**
