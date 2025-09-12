@@ -17,7 +17,6 @@ import morgan from "morgan";
 import compression from "compression";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
-import { createClient } from "redis";
 
 // Import routes
 import authRoutes from "./routes/auth";

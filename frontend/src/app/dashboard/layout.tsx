@@ -1,14 +1,8 @@
-/**
- * Dashboard Layout Component
- * Provides the main layout structure for dashboard pages including sidebar and header
- *
- * @author Finance Dashboard Team
- * @version 1.0.0
- */
+// src/app/dashboard/layout.tsx — MODERNIZED DASHBOARD LAYOUT
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -22,14 +16,13 @@ import {
   Bars3Icon,
   XMarkIcon,
   ArrowRightEndOnRectangleIcon,
+  MagnifyingGlassIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import AuthGuard from "@/components/AuthGuard";
 import { useAuth } from "@/contexts/AuthContext";
 
-/**
- * Navigation menu items configuration
- */
 const navigation = [
   {
     name: "Dashboard",
@@ -75,229 +68,288 @@ const navigation = [
   },
 ];
 
-/**
- * Dashboard Layout Props
- */
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-/**
- * Dashboard Layout Component
- *
- * @param {DashboardLayoutProps} props - Component props
- * @returns {JSX.Element} Dashboard layout with sidebar and main content
- */
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, logout } = useAuth();
-  /**
-   * Update current time every minute
-   * Used for displaying live time in the header
-   */
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Update every minute
 
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  /**
-   * Format current time for display
-   *
-   * @returns {string} Formatted time string
-   */
-  const formatTime = (): string => {
-    return currentTime.toLocaleTimeString("en-US", {
+  const formatTime = (): string =>
+    currentTime.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
     });
-  };
 
-  /**
-   * Format current date for display
-   *
-   * @returns {string} Formatted date string
-   */
-  const formatDate = (): string => {
-    return currentTime.toLocaleDateString("en-US", {
+  const formatDate = (): string =>
+    currentTime.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-  };
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   return (
-    <AuthGuard requireAuth={true}>
-      <div className="h-screen bg-gray-50 flex">
-        {/* Mobile sidebar overlay */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <div className="absolute inset-0 bg-gray-600 opacity-75" />
-          </div>
-        )}
-
-        {/* Sidebar */}
-        <div
-          className={cn(
-            "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          )}
-        >
-          {/* Sidebar header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">AI</span>
-                </div>
+    <AuthGuard requireAuth>
+      <div className="min-h-screen bg-slate-50">
+        {/* Mobile top bar */}
+        <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-slate-200">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <button
+              aria-label="Open sidebar"
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-lg border border-slate-200 hover:bg-slate-50"
+            >
+              <Bars3Icon className="w-6 h-6 text-slate-700" />
+            </button>
+            <div className="flex items-center space-x-2">
+              <div className="bg-blue-600 text-white px-2.5 py-1.5 rounded-lg text-sm font-bold">
+                AI
               </div>
-              <div className="ml-3">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Finance AI
-                </h2>
-                <p className="text-xs text-gray-500">Smart Dashboard</p>
-              </div>
+              <span className="font-semibold text-slate-900">
+                Finance Dashboard
+              </span>
             </div>
-
-            {/* Mobile close button */}
-            <button
-              className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200",
-                    isActive
-                      ? "bg-blue-50 text-blue-700 border-r-2 border-blue-500"
-                      : "text-gray-700 hover:text-blue-600 hover:bg-blue-50"
-                  )}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon
-                    className={cn(
-                      "mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200",
-                      isActive
-                        ? "text-blue-500"
-                        : "text-gray-400 group-hover:text-blue-500"
-                    )}
-                  />
-                  <div>
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-xs text-gray-500 group-hover:text-blue-400">
-                      {item.description}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Sidebar footer */}
-          <div className="p-4 border-t border-gray-200 space-y-3">
-            {/* Logout Button */}
-            <button
-              onClick={logout}
-              className="w-full flex items-center justify-start px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
-            >
-              <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-3" />
-              <span>Sign Out</span>
-            </button>
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col min-w-0 h-full">
-          {/* Top header - UPDATE THIS SECTION */}
-          <header className="bg-white shadow-sm border-b border-gray-200 h-16 flex items-center justify-between px-6">
-            {/* Mobile menu button */}
-            <button
-              className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Bars3Icon className="w-6 h-6" />
-            </button>
-
-            {/* Page title - will be dynamic based on current page */}
-            <div className="hidden lg:block">
-              <h1 className="text-2xl font-semibold text-gray-900">
-                {navigation.find((item) => item.href === pathname)?.name ||
-                  "Dashboard"}
-              </h1>
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-40 w-72 transform bg-white border-r border-slate-200 transition-transform duration-200 ease-in-out",
+            "lg:translate-x-0",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          )}
+        >
+          {/* Sidebar header */}
+          <div className="h-16 px-5 border-b border-slate-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="bg-blue-600 text-white px-2.5 py-1.5 rounded-lg text-sm font-bold">
+                AI
+              </div>
+              <div className="leading-tight">
+                <p className="font-semibold text-slate-900">Finance AI</p>
+                <p className="text-xs text-slate-500">Smart Dashboard</p>
+              </div>
             </div>
+            <button
+              aria-label="Close sidebar"
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-2 rounded-lg border border-slate-200 hover:bg-slate-50"
+            >
+              <XMarkIcon className="w-5 h-5 text-slate-700" />
+            </button>
+          </div>
 
-            {/* Header right section - UPDATED */}
-            <div className="flex items-center space-x-4">
-              {/* Current time and date */}
-              <div className="hidden sm:block text-right">
-                <div className="text-sm font-medium text-gray-900">
-                  {formatTime()}
+          {/* Nav */}
+          <nav className="px-3 py-4 overflow-y-auto h-[calc(100vh-8rem)]">
+            <ul className="space-y-1.5">
+              {navigation.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  pathname?.startsWith(item.href + "/");
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "group flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors",
+                        isActive
+                          ? "bg-blue-50 border-blue-200 text-blue-700"
+                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          "w-5 h-5",
+                          isActive
+                            ? "text-blue-600"
+                            : "text-slate-500 group-hover:text-slate-700"
+                        )}
+                      />
+                      <div className="flex-1">
+                        <p
+                          className={cn(
+                            "text-sm font-medium",
+                            isActive ? "text-blue-700" : "text-slate-800"
+                          )}
+                        >
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {item.description}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+
+          {/* Sidebar footer with user */}
+          <div className="h-16 border-t border-slate-200 px-4 flex items-center justify-between">
+            {user && (
+              <div className="flex items-center gap-3 min-w-0">
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.firstName || user.email}
+                    className="w-9 h-9 rounded-full ring-2 ring-blue-100"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+                    {(user.firstName?.[0] || user.email[0]).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate text-slate-900">
+                    {user.firstName
+                      ? `${user.firstName} ${user.lastName || ""}`
+                      : user.email}
+                  </p>
+                  <p className="text-xs text-slate-500 truncate">
+                    {formatDate()}
+                  </p>
                 </div>
-                <div className="text-xs text-gray-500">{formatDate()}</div>
+              </div>
+            )}
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"
+            >
+              <ArrowRightEndOnRectangleIcon className="w-4 h-8" />
+            </button>
+          </div>
+        </aside>
+
+        {/* Backdrop for mobile sidebar */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Main content */}
+        <div className="lg:pl-72">
+          {/* Header */}
+          <header className="hidden lg:block sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-slate-200">
+            <div className="h-16 px-4 lg:px-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="hidden md:flex items-center gap-2 text-sm text-slate-500">
+                  <span className="font-medium text-slate-800">
+                    {navigation.find((n) => pathname?.startsWith(n.href))
+                      ?.name || "Dashboard"}
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span>{formatDate()}</span>
+                </div>
               </div>
 
-              {/* Notification bell */}
-              <button className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full transition-colors duration-200">
-                <BellIcon className="w-5 h-5" />
-                {/* Notification badge */}
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              {/* Search */}
+              <div className="hidden md:flex items-center max-w-md w-full">
+                <div className="relative w-full">
+                  <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Search transactions, accounts, insights..."
+                    className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </div>
+              </div>
 
-              {/* User Avatar and Info */}
-              {user && (
-                <div className="flex items-center space-x-3">
-                  {user.avatar ? (
+              {/* User menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100"
+                  aria-haspopup="menu"
+                  aria-expanded={userMenuOpen}
+                >
+                  {user?.avatar ? (
                     <img
                       src={user.avatar}
-                      alt={`${user.firstName || user.email}`}
-                      className="w-8 h-8 rounded-full ring-2 ring-blue-100"
+                      alt="avatar"
+                      className="w-9 h-9 rounded-full ring-2 ring-blue-100"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
-                      {(user.firstName?.[0] || user.email[0]).toUpperCase()}
+                    <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+                      {(
+                        user?.firstName?.[0] ||
+                        user?.email?.[0] ||
+                        "U"
+                      ).toUpperCase()}
                     </div>
                   )}
-                  <div className="hidden md:block">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user.firstName
+                  <div className="hidden md:block text-left">
+                    <p className="text-sm font-medium text-slate-900 leading-5">
+                      {user?.firstName
                         ? `${user.firstName} ${user.lastName || ""}`
-                        : user.email}
+                        : user?.email}
                     </p>
-                    <p className="text-xs text-gray-500">{formatTime()}</p>
+                    <p className="text-xs text-slate-500">
+                      Last sync: {formatTime()}
+                    </p>
                   </div>
-                </div>
-              )}
-              <button
-                onClick={logout}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
-              >
-                <ArrowRightEndOnRectangleIcon className="w-4 h-4 mr-1" />
-                Sign Out
-              </button>
+                  <ChevronDownIcon className="w-4 h-4 text-slate-500" />
+                </button>
+
+                {userMenuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-lg shadow-lg p-1 z-40"
+                    onMouseLeave={() => setUserMenuOpen(false)}
+                  >
+                    <Link
+                      href="/dashboard/profile"
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-slate-50"
+                      role="menuitem"
+                    >
+                      <UserIcon className="w-4 h-4 text-slate-500" />
+                      Profile
+                    </Link>
+                    <Link
+                      href="/dashboard/settings"
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-slate-50"
+                      role="menuitem"
+                    >
+                      <CogIcon className="w-4 h-4 text-slate-500" />
+                      Settings
+                    </Link>
+                    <div className="my-1 h-px bg-slate-200" />
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-red-700 hover:bg-red-50"
+                      role="menuitem"
+                    >
+                      <ArrowRightEndOnRectangleIcon className="w-4 h-4" />
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 
-          {/* Page content */}
-          <main className="flex-1 p-6 overflow-auto">
+          {/* Page body */}
+          <main className="p-4 lg:p-6">
             <div className="max-w-7xl mx-auto">{children}</div>
           </main>
         </div>
