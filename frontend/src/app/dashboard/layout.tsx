@@ -160,9 +160,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <nav className="px-3 py-4 overflow-y-auto h-[calc(100vh-8rem)]">
             <ul className="space-y-1.5">
               {navigation.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  pathname?.startsWith(item.href + "/");
+                const isActive = pathname === item.href;
+
                 return (
                   <li key={item.href}>
                     <Link

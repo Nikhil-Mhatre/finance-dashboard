@@ -4,7 +4,7 @@
  * Replaces JWT with session-based authentication
  */
 
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 
 /**
  * Extended Request interface with user information
@@ -23,13 +23,15 @@ export interface AuthRequest extends Request {
  * Session Authentication Middleware
  * Verifies user session and adds user information to request object
  */
-export async function authenticateSession(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export const authenticateSession: RequestHandler = async (req, res, next) => {
   try {
-    if (!req.isAuthenticated()) {
+    // isAuthenticated is added by passport; TS may not see it without augmentation
+    const isAuth =
+      typeof (req as any).isAuthenticated === "function"
+        ? (req as any).isAuthenticated()
+        : false;
+
+    if (!isAuth) {
       res.status(401).json({
         status: "error",
         message: "Authentication required. Please login with Google.",
@@ -37,9 +39,6 @@ export async function authenticateSession(
       });
       return;
     }
-
-    // User is authenticated via session
-    console.log(`🔐 Authenticated user: ${(req.user as any)?.email}`);
     next();
   } catch (error) {
     console.error("❌ Auth middleware error:", error);
@@ -49,7 +48,7 @@ export async function authenticateSession(
       timestamp: new Date().toISOString(),
     });
   }
-}
+};
 
 /**
  * Optional Authentication Middleware
