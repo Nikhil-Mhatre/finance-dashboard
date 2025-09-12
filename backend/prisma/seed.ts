@@ -1,408 +1,395 @@
+// prisma/seed.ts — Improved seeding with Google OAuth support
+
 /**
  * Database Seeder for AI Finance Dashboard
- * Populates database with realistic sample data
+ * Populates database with realistic sample data for both OAuth and credentials users.
  *
- * Usage: npm run seed or pnpm prisma db seed
- *
- * @author Finance Dashboard Team
- * @version 1.0.0
+ * Usage:
+ *  - pnpm prisma db seed   (if configured in package.json)
+ *  - pnpm run seed         (custom script calling tsx prisma/seed.ts)
  */
 
 import {
   PrismaClient,
   TransactionCategory,
   TransactionType,
+  AccountType,
+  BudgetPeriod,
+  InvestmentType,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+const MyUser = {
+  email: "nikhilmhatre0317@gmail.com",
+  firstName: "Nikhil",
+  lastName: "Mhatre",
+  googleId: "102649189699883195916",
+  avatar:
+    "https://lh3.googleusercontent.com/a/ACg8ocJHZz4j5GkDlqAHkUeUVdD_teSIt4wrLBN5HTfUO7TuAExvlqY=s96-c",
+};
+
 async function main() {
   try {
-    console.log("🧹 Cleaning existing data...");
+    console.log("👤 Creating demo users...");
 
-    // Delete in correct order due to foreign key constraints
-    await prisma.aIInsight.deleteMany();
-    await prisma.transaction.deleteMany();
-    await prisma.investment.deleteMany();
-    await prisma.budget.deleteMany();
-    await prisma.alert.deleteMany();
-    await prisma.account.deleteMany();
-    await prisma.user.deleteMany();
-
-    console.log("✅ Existing data cleared");
-
-    console.log("👤 Creating sample users...");
-
-    // Create demo user with hashed password
-    const hashedPassword = await bcrypt.hash("demo123456", 12);
-
-    const user = await prisma.user.create({
-      data: {
-        email: "demo@aifinance.com",
-        firstName: "Alex",
-        lastName: "Johnson",
-        password: hashedPassword,
+    // 2) OAuth-based user (googleId, no password)
+    const oauthUser = await prisma.user.upsert({
+      where: { email: MyUser.email },
+      update: {},
+      create: {
+        email: MyUser.email,
+        firstName: MyUser.firstName,
+        lastName: MyUser.lastName,
+        googleId: MyUser.googleId,
+        avatar: MyUser.avatar,
+        // password: null // Prisma optional, omit entirely
       },
     });
 
-    console.log("✅ Sample user created");
+    console.log("✅ Demo users created");
 
-    console.log("🏦 Creating sample accounts...");
+    // Helper function to seed a user’s financial data
+    async function seedUserFinancials(userId: string, variant: "A" | "B") {
+      console.log(`🏦 Creating accounts for user ${userId}...`);
+      const checking = await prisma.account.create({
+        data: {
+          name: variant === "A" ? "Primary Checking" : "Everyday Checking",
+          type: "CHECKING" as AccountType,
+          balance: variant === "A" ? 2500.75 : 3200.25,
+          currency: "USD",
+          userId,
+        },
+      });
 
-    const checkingAccount = await prisma.account.create({
-      data: {
-        name: "Primary Checking",
-        type: "CHECKING",
-        balance: 2500.75,
-        currency: "USD",
-        userId: user.id,
-      },
-    });
+      const savings = await prisma.account.create({
+        data: {
+          name: variant === "A" ? "Emergency Savings" : "Goals Savings",
+          type: "SAVINGS" as AccountType,
+          balance: variant === "A" ? 15000.0 : 9800.5,
+          currency: "USD",
+          userId,
+        },
+      });
 
-    const savingsAccount = await prisma.account.create({
-      data: {
-        name: "Emergency Savings",
-        type: "SAVINGS",
-        balance: 15000.0,
-        currency: "USD",
-        userId: user.id,
-      },
-    });
+      const credit = await prisma.account.create({
+        data: {
+          name: variant === "A" ? "Travel Credit Card" : "Rewards Credit Card",
+          type: "CREDIT_CARD" as AccountType,
+          balance: variant === "A" ? -1250.3 : -620.8,
+          currency: "USD",
+          userId,
+        },
+      });
 
-    const creditAccount = await prisma.account.create({
-      data: {
-        name: "Travel Credit Card",
-        type: "CREDIT_CARD",
-        balance: -1250.3,
-        currency: "USD",
-        userId: user.id,
-      },
-    });
+      console.log("✅ Accounts created");
 
-    console.log("✅ Sample accounts created");
+      console.log("💳 Creating transactions...");
+      const now = new Date();
+      const ym = (y: number, m: number, d: number) => new Date(y, m, d);
 
-    console.log("💳 Creating sample transactions...");
+      // Income for 3 months
+      const baseYear = now.getFullYear();
+      const thisMonth = now.getMonth();
 
-    // Generate realistic transactions over the past 3 months
-    const transactions = [];
-    const now = new Date();
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+      const income = [
+        {
+          description: "Salary - Tech Corp",
+          amount: 5500,
+          category: "SALARY" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 1),
+          type: "INCOME" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Salary - Tech Corp",
+          amount: 5500,
+          category: "SALARY" as TransactionCategory,
+          date: ym(baseYear, thisMonth - 1, 1),
+          type: "INCOME" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Salary - Tech Corp",
+          amount: 5500,
+          category: "SALARY" as TransactionCategory,
+          date: ym(baseYear, thisMonth - 2, 1),
+          type: "INCOME" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Freelance Project",
+          amount: variant === "A" ? 1200 : 850,
+          category: "FREELANCE" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 15),
+          type: "INCOME" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Investment Dividend",
+          amount: 85.5,
+          category: "DIVIDEND_INCOME" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 10),
+          type: "INCOME" as TransactionType,
+          accountId: savings.id,
+        },
+      ];
 
-    // Income transactions
-    const incomeTransactions = [
-      {
-        description: "Salary - Tech Corp",
-        amount: 5500,
-        category: "SALARY" as TransactionCategory,
-        date: new Date(2024, 8, 1),
-      },
-      {
-        description: "Salary - Tech Corp",
-        amount: 5500,
-        category: "SALARY",
-        date: new Date(2024, 7, 1),
-      },
-      {
-        description: "Salary - Tech Corp",
-        amount: 5500,
-        category: "SALARY",
-        date: new Date(2024, 6, 1),
-      },
-      {
-        description: "Freelance Project",
-        amount: 1200,
-        category: "FREELANCE",
-        date: new Date(2024, 8, 15),
-      },
-      {
-        description: "Investment Dividend",
-        amount: 85.5,
-        category: "DIVIDEND_INCOME",
-        date: new Date(2024, 8, 10),
-      },
-    ];
+      const expenses = [
+        {
+          description: "Whole Foods Market",
+          amount: -125.4,
+          category: "FOOD_DINING" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 20),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Shell Gas Station",
+          amount: -65.2,
+          category: "TRANSPORTATION" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 18),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Amazon Purchase",
+          amount: -89.99,
+          category: "SHOPPING" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 15),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Netflix Subscription",
+          amount: -15.99,
+          category: "ENTERTAINMENT" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 12),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Electric Bill",
+          amount: -145.6,
+          category: "BILLS_UTILITIES" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 5),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Doctor Visit",
+          amount: -200.0,
+          category: "HEALTHCARE" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 14),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Gym Membership",
+          amount: -49.99,
+          category: "PERSONAL_CARE" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 1),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+        // Prior month examples
+        {
+          description: "Restaurant Dinner",
+          amount: -85.3,
+          category: "FOOD_DINING" as TransactionCategory,
+          date: ym(baseYear, thisMonth - 1, 28),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+        {
+          description: "Internet Service",
+          amount: -79.99,
+          category: "BILLS_UTILITIES" as TransactionCategory,
+          date: ym(baseYear, thisMonth - 1, 15),
+          type: "EXPENSE" as TransactionType,
+          accountId: checking.id,
+        },
+      ];
 
-    // Expense transactions
-    const expenseTransactions = [
-      {
-        description: "Whole Foods Market",
-        amount: -125.4,
-        category: "FOOD_DINING",
-        date: new Date(2024, 8, 20),
-      },
-      {
-        description: "Shell Gas Station",
-        amount: -65.2,
-        category: "TRANSPORTATION",
-        date: new Date(2024, 8, 18),
-      },
-      {
-        description: "Amazon Purchase",
-        amount: -89.99,
-        category: "SHOPPING",
-        date: new Date(2024, 8, 15),
-      },
-      {
-        description: "Netflix Subscription",
-        amount: -15.99,
-        category: "ENTERTAINMENT",
-        date: new Date(2024, 8, 12),
-      },
-      {
-        description: "Electric Bill",
-        amount: -145.6,
-        category: "BILLS_UTILITIES",
-        date: new Date(2024, 8, 5),
-      },
-      {
-        description: "Starbucks Coffee",
-        amount: -8.75,
-        category: "FOOD_DINING",
-        date: new Date(2024, 8, 22),
-      },
-      {
-        description: "Uber Ride",
-        amount: -18.5,
-        category: "TRANSPORTATION",
-        date: new Date(2024, 8, 19),
-      },
-      {
-        description: "Doctor Visit",
-        amount: -200.0,
-        category: "HEALTHCARE",
-        date: new Date(2024, 8, 14),
-      },
-      {
-        description: "Gym Membership",
-        amount: -49.99,
-        category: "PERSONAL_CARE",
-        date: new Date(2024, 8, 1),
-      },
-      {
-        description: "Restaurant Dinner",
-        amount: -85.3,
-        category: "FOOD_DINING",
-        date: new Date(2024, 7, 28),
-      },
-      {
-        description: "Target Shopping",
-        amount: -67.45,
-        category: "SHOPPING",
-        date: new Date(2024, 7, 25),
-      },
-      {
-        description: "Internet Service",
-        amount: -79.99,
-        category: "BILLS_UTILITIES",
-        date: new Date(2024, 7, 15),
-      },
-      {
-        description: "Movie Theater",
-        amount: -24.5,
-        category: "ENTERTAINMENT",
-        date: new Date(2024, 7, 20),
-      },
-      {
-        description: "Pharmacy",
-        amount: -32.8,
-        category: "HEALTHCARE",
-        date: new Date(2024, 7, 12),
-      },
-      {
-        description: "Book Purchase",
-        amount: -19.99,
-        category: "EDUCATION",
-        date: new Date(2024, 7, 8),
-      },
-    ];
+      // Credit card travel expenses
+      const creditTx = [
+        {
+          description: "Flight Booking",
+          amount: -450.0,
+          category: "TRAVEL" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 10),
+          type: "EXPENSE" as TransactionType,
+          accountId: credit.id,
+        },
+        {
+          description: "Hotel Stay",
+          amount: -320.75,
+          category: "TRAVEL" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 12),
+          type: "EXPENSE" as TransactionType,
+          accountId: credit.id,
+        },
+        {
+          description: "Restaurant",
+          amount: -95.6,
+          category: "FOOD_DINING" as TransactionCategory,
+          date: ym(baseYear, thisMonth, 13),
+          type: "EXPENSE" as TransactionType,
+          accountId: credit.id,
+        },
+      ];
 
-    // Combine all transactions
-    const allTransactions = [
-      ...incomeTransactions.map((t) => ({
+      const allTx = [...income, ...expenses, ...creditTx].map((t) => ({
         ...t,
-        type: TransactionType.INCOME,
-        accountId: checkingAccount.id,
-        category: t.category as TransactionCategory,
-      })),
-      ...expenseTransactions.map((t) => ({
-        ...t,
-        type: TransactionType.EXPENSE,
-        accountId: checkingAccount.id,
-        category: t.category as TransactionCategory,
-      })),
-    ];
+        userId,
+      }));
 
-    // Add some credit card transactions
-    const creditTransactions = [
-      {
-        description: "Flight Booking",
-        amount: -450.0,
-        category: "TRAVEL" as TransactionCategory,
-        type: TransactionType.EXPENSE,
-        date: new Date(2024, 8, 10),
-        accountId: creditAccount.id,
-      },
-      {
-        description: "Hotel Stay",
-        amount: -320.75,
-        category: "TRAVEL" as TransactionCategory,
-        type: TransactionType.EXPENSE,
-        date: new Date(2024, 8, 12),
-        accountId: creditAccount.id,
-      },
-      {
-        description: "Restaurant",
-        amount: -95.6,
-        category: "FOOD_DINING" as TransactionCategory,
-        type: TransactionType.EXPENSE,
-        date: new Date(2024, 8, 13),
-        accountId: creditAccount.id,
-      },
-    ];
+      await prisma.transaction.createMany({ data: allTx });
+      console.log(`✅ ${allTx.length} transactions created`);
 
-    allTransactions.push(...creditTransactions);
+      console.log("💰 Creating budgets...");
+      await prisma.budget.createMany({
+        data: [
+          {
+            name: "Monthly Food Budget",
+            category: "FOOD_DINING",
+            limit: 400.0,
+            spent: 219.45,
+            period: "MONTHLY" as BudgetPeriod,
+            startDate: ym(baseYear, thisMonth, 1),
+            endDate: ym(baseYear, thisMonth, 28),
+            userId,
+            isActive: true,
+          },
+          {
+            name: "Entertainment Budget",
+            category: "ENTERTAINMENT",
+            limit: 150.0,
+            spent: 40.49,
+            period: "MONTHLY" as BudgetPeriod,
+            startDate: ym(baseYear, thisMonth, 1),
+            endDate: ym(baseYear, thisMonth, 28),
+            userId,
+            isActive: true,
+          },
+          {
+            name: "Transportation Budget",
+            category: "TRANSPORTATION",
+            limit: 250.0,
+            spent: 83.7,
+            period: "MONTHLY" as BudgetPeriod,
+            startDate: ym(baseYear, thisMonth, 1),
+            endDate: ym(baseYear, thisMonth, 28),
+            userId,
+            isActive: true,
+          },
+        ],
+      });
+      console.log("✅ Budgets created");
 
-    // Create all transactions
-    await prisma.transaction.createMany({
-      data: allTransactions.map((t) => ({
-        ...t,
-        userId: user.id,
-      })),
-    });
+      console.log("📈 Creating investments...");
+      await prisma.investment.createMany({
+        data: [
+          {
+            symbol: "AAPL",
+            name: "Apple Inc.",
+            quantity: 10.0,
+            purchasePrice: 150.0,
+            currentPrice: 175.2,
+            purchaseDate: ym(baseYear, thisMonth - 3, 15),
+            userId,
+            type: "STOCK" as InvestmentType,
+          },
+          {
+            symbol: "GOOGL",
+            name: "Alphabet Inc.",
+            quantity: 5.0,
+            purchasePrice: 2500.0,
+            currentPrice: 2650.75,
+            purchaseDate: ym(baseYear, thisMonth - 4, 20),
+            userId,
+            type: "STOCK" as InvestmentType,
+          },
+          {
+            symbol: "SPY",
+            name: "SPDR S&P 500 ETF",
+            quantity: 25.0,
+            purchasePrice: 400.0,
+            currentPrice: 435.8,
+            purchaseDate: ym(baseYear, thisMonth - 5, 10),
+            userId,
+            type: "ETF" as InvestmentType,
+          },
+        ],
+      });
+      console.log("✅ Investments created");
 
-    console.log("✅ Sample transactions created");
+      console.log("🤖 Creating AI insights...");
+      await prisma.aIInsight.createMany({
+        data: [
+          {
+            id: `ai-insight-${Date.now()}-${variant}-1`,
+            title: "💡 Optimize Your Food Spending",
+            content:
+              "Based on recent transactions, food and dining remain within your budget, but you could save an additional $50–$70 by cooking at home twice a week. Try batch cooking and tracking groceries to curb impulsive dining.",
+            type: "SPENDING_PATTERN",
+            confidence: 0.86,
+            userId,
+            isRelevant: true,
+          },
+          {
+            id: `ai-insight-${Date.now()}-${variant}-2`,
+            title: "📊 Budget Health Check",
+            content:
+              "You're tracking well across most budgets. Entertainment is only 27% utilized, transportation is trending stable, and utilities look predictable. Consider reallocating unused funds to savings to accelerate goals.",
+            type: "BUDGET_RECOMMENDATION",
+            confidence: 0.91,
+            userId,
+            isRelevant: true,
+          },
+          {
+            id: `ai-insight-${Date.now()}-${variant}-3`,
+            title: "💰 Investment Performance Update",
+            content:
+              "Your portfolio shows an estimated gain this quarter. AAPL and SPY lead performance. Consider rebalancing if any single sector exceeds 30% exposure to maintain risk-adjusted returns.",
+            type: "INVESTMENT_ADVICE",
+            confidence: 0.8,
+            userId,
+            isRelevant: true,
+          },
+        ],
+      });
+      console.log("✅ AI insights created");
+    }
 
-    console.log("💰 Creating sample budgets...");
+    // Seed financials for both users
+    await seedUserFinancials(oauthUser.id, "B");
 
-    await prisma.budget.createMany({
-      data: [
-        {
-          name: "Monthly Food Budget",
-          category: "FOOD_DINING",
-          limit: 400.0,
-          spent: 219.45,
-          period: "MONTHLY",
-          startDate: new Date(2024, 8, 1),
-          endDate: new Date(2024, 8, 30),
-          userId: user.id,
-        },
-        {
-          name: "Entertainment Budget",
-          category: "ENTERTAINMENT",
-          limit: 150.0,
-          spent: 40.49,
-          period: "MONTHLY",
-          startDate: new Date(2024, 8, 1),
-          endDate: new Date(2024, 8, 30),
-          userId: user.id,
-        },
-        {
-          name: "Transportation Budget",
-          category: "TRANSPORTATION",
-          limit: 250.0,
-          spent: 83.7,
-          period: "MONTHLY",
-          startDate: new Date(2024, 8, 1),
-          endDate: new Date(2024, 8, 30),
-          userId: user.id,
-        },
-      ],
-    });
+    console.log("\n🎉 Seeding completed successfully!");
+    console.log("📊 Summary (approximate):");
+    const [users, accounts, transactions, budgets, investments, insights] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.account.count(),
+        prisma.transaction.count(),
+        prisma.budget.count(),
+        prisma.investment.count(),
+        prisma.aIInsight.count(),
+      ]);
+    console.log(`👤 Users: ${users}`);
+    console.log(`🏦 Accounts: ${accounts}`);
+    console.log(`💳 Transactions: ${transactions}`);
+    console.log(`💰 Budgets: ${budgets}`);
+    console.log(`📈 Investments: ${investments}`);
+    console.log(`🤖 AI Insights: ${insights}`);
 
-    console.log("✅ Sample budgets created");
-
-    console.log("📈 Creating sample investments...");
-
-    await prisma.investment.createMany({
-      data: [
-        {
-          symbol: "AAPL",
-          name: "Apple Inc.",
-          quantity: 10.0,
-          purchasePrice: 150.0,
-          currentPrice: 175.2,
-          purchaseDate: new Date(2024, 5, 15),
-          userId: user.id,
-          type: "OTHER",
-        },
-        {
-          symbol: "GOOGL",
-          name: "Alphabet Inc.",
-          quantity: 5.0,
-          purchasePrice: 2500.0,
-          currentPrice: 2650.75,
-          purchaseDate: new Date(2024, 4, 20),
-          userId: user.id,
-          type: "OTHER",
-        },
-        {
-          symbol: "SPY",
-          name: "SPDR S&P 500 ETF",
-          quantity: 25.0,
-          purchasePrice: 400.0,
-          currentPrice: 435.8,
-          purchaseDate: new Date(2024, 3, 10),
-          userId: user.id,
-          type: "OTHER",
-        },
-      ],
-    });
-
-    console.log("✅ Sample investments created");
-
-    console.log("🎯 Creating sample AI insights...");
-
-    await prisma.aIInsight.createMany({
-      data: [
-        {
-          id: `ai-insight-${Date.now()}-1`,
-          title: "💡 Optimize Your Food Spending",
-          content:
-            "Based on your recent transactions, you're spending about $219 on food and dining this month, which is well within your $400 budget. However, you could save an additional $50-70 monthly by cooking more meals at home. Consider meal prep on weekends to reduce dining out frequency.",
-          type: "SPENDING_PATTERN",
-          confidence: 0.85,
-          userId: user.id,
-        },
-        {
-          id: `ai-insight-${Date.now()}-2`,
-          title: "📊 Great Budget Management!",
-          content:
-            "Excellent news! You're tracking well across all your budget categories this month. Your entertainment spending is only 27% of your allocated budget, and transportation costs are reasonable at $84. Keep up this disciplined approach to reach your savings goals.",
-          type: "BUDGET_RECOMMENDATION",
-          confidence: 0.92,
-          userId: user.id,
-        },
-        {
-          id: `ai-insight-${Date.now()}-3`,
-          title: "💰 Investment Performance Update",
-          content:
-            "Your investment portfolio is performing well with an overall gain of approximately $1,600. Apple (AAPL) is up 16.8% and your SPY holdings show steady growth. Consider rebalancing if tech positions exceed 30% of your total portfolio.",
-          type: "INVESTMENT_ADVICE",
-          confidence: 0.78,
-          userId: user.id,
-        },
-      ],
-    });
-
-    console.log("✅ Sample AI insights created");
-
-    console.log("🎉 Database seeding completed successfully!");
-    console.log("");
-    console.log("📊 Summary:");
-    console.log("👤 Users: 1");
-    console.log("🏦 Accounts: 3");
-    console.log("💳 Transactions: " + allTransactions.length);
-    console.log("💰 Budgets: 3");
-    console.log("📈 Investments: 3");
-    console.log("🤖 AI Insights: 3");
-    console.log("");
-    console.log("🔐 Demo Login Credentials:");
-    console.log("Email: demo@aifinance.com");
-    console.log("Password: demo123456");
+    console.log(
+      "\n🔐 OAuth Demo User (sign in with Google using this email if possible):"
+    );
+    console.log(`Email: ${MyUser.email} (linked via googleId)`);
   } catch (error) {
     console.error("❌ Seeding failed:", error);
-    throw error;
   } finally {
     await prisma.$disconnect();
   }
