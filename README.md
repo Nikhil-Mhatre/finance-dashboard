@@ -1,303 +1,597 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
+# 🤖 AI Finance Dashboard
 
-# Refactor and improvise the attached README.md file as latest implementation of Google oAuth.
+> **Modern personal finance management platform powered by Google Gemini AI with intelligent insights, real-time analytics, and secure Google OAuth authentication.**
 
-Here is an updated README.md tailored to the latest Google OAuth session-based implementation, Redis-backed sessions, and your current codebase.
-
-# AI Finance Dashboard
-
-Modern personal finance management platform with AI-powered insights, advanced analytics, and real-time dashboards. Now secured with Google OAuth 2.0 and Redis-backed session authentication.
-
-## Overview
-
-AI Finance Dashboard is a full‑stack web application to manage personal finances, track transactions, analyze spending, and receive actionable recommendations powered by Google Gemini AI. It features Google OAuth sign-in, session-based auth with Redis, intuitive dashboards, interactive charts, and optimized performance.
+[![Deploy Status](https://img.shields.io/badge/Deploy-Render-46E3B7?style=flat-square&logo=render)](https://render.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
+[![Express.js](https://img.shields.io/badge/Express.js-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://prisma.io)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io)
 
 ---
 
-## Features
+## 📸 Screenshots
 
-- Google OAuth 2.0 sign-in with session-based auth (no passwords to manage)
-- AI financial insights using Gemini (spending patterns, budgets, risks)
-- Dashboard analytics: balances, income, expenses, investments
-- Interactive charts (spending breakdowns, top categories)
-- Transaction management with rich categorization
-- Account management (checking, savings, credit card, etc.)
-- Budget tracking and alerting
-- Real-time updates via Redis Pub/Sub
-- Secure and responsive UI (Helmet, CORS, Tailwind)
-- End-to-end TypeScript types
+### 🔐 Google OAuth Login
 
----
+_Secure, one-click authentication with Google OAuth 2.0_
 
-## Tech Stack
+![Login Page](https://ai-finance-dashboard-screenshots.s3.ap-south-1.amazonaws.com/login-page.PNG)
 
-### Backend
+### 📊 Dashboard Overview
 
-- Express.js (TypeScript)
-- Prisma ORM + PostgreSQL
-- Google Gemini AI API
-- Redis
-  - node-redis for session store
-  - ioredis for application caching and Pub/Sub
-- Passport + passport-google-oauth20
-- express-session
-- Zod validation
-- Helmet, CORS, Compression, Morgan
+_Real-time financial overview with AI-powered insights and interactive charts_
 
-### Frontend
+![Dashboard](https://ai-finance-dashboard-screenshots.s3.ap-south-1.amazonaws.com/dashboard-overview-1.PNG)
 
-- Next.js 15+ (App Router)
-- React 19+
-- Tailwind CSS v4 / Headless UI / Heroicons
-- Chart.js / react-chartjs-2
-- Axios (withCredentials enabled)
-- React Context and hooks
-- TypeScript
+### 💳 Transaction Management
+
+_Advanced filtering, sorting, and mobile-responsive transaction lists_
+
+![Transactions](https://ai-finance-dashboard-screenshots.s3.ap-south-1.amazonaws.com/transactions-list.PNG)
+
+### 📈 Analytics & Insights
+
+_Deep analytics with spending breakdowns and AI recommendations_
+
+![Analytics](https://ai-finance-dashboard-screenshots.s3.ap-south-1.amazonaws.com/analytics-charts.PNG)
+
+### 📱 Mobile Experience
+
+_Fully responsive design optimized for mobile devices_
+
+![Mobile](https://ai-finance-dashboard-screenshots.s3.ap-south-1.amazonaws.com/mobile-responsive.PNG)
 
 ---
 
-## Project Structure
+## ✨ Features
 
-```plaintext
-/
-├── backend/            # Express API (src/, prisma/, services/, routes/)
-├── frontend/           # Next.js app (src/app, components, contexts, lib)
-├── package.json        # per app (or unified), scripts and config
-├── pnpm-lock.yaml
-├── next.config.ts      # Frontend config
-├── tsconfig.json       # TypeScript config
-├── README.md           # << You are here!
-```
+### 🤖 **AI-Powered Intelligence**
 
-Key folders:
+- **Smart Insights**: Automated spending analysis using Google Gemini AI
+- **Budget Recommendations**: Personalized financial advice and alerts
+- **Pattern Recognition**: Unusual spending detection and goal tracking
+- **Predictive Analytics**: Future spending forecasts and trends
 
-- /src/routes Express API routes (auth, dashboard, accounts, transactions, ai)
-- /src/config OAuth and configuration (Google strategy)
-- /src/services Redis service, AI service
-- /src/middleware Auth middleware (session-based)
-- /prisma Schema and seed scripts
-- /frontend/src App router, components, contexts, lib
+### 🔐 **Secure Authentication**
+
+- **Google OAuth 2.0**: No passwords to manage, secure sign-in
+- **Session Management**: Redis-backed sessions with automatic expiry
+- **Account Linking**: Seamlessly connect existing accounts via email
+- **Privacy First**: No sensitive data stored, Google handles identity
+
+### 📊 **Advanced Analytics**
+
+- **Real-Time Dashboards**: Live financial overview with key metrics
+- **Interactive Charts**: Beautiful visualizations using Chart.js
+- **Category Breakdown**: Detailed spending analysis by category
+- **Performance Tracking**: Monitor financial goals and achievements
+
+### 💳 **Transaction Management**
+
+- **Smart Categorization**: Automatic transaction categorization
+- **Multi-Account Support**: Checking, savings, credit cards, investments
+- **Advanced Filtering**: Search, sort, and filter by multiple criteria
+- **Bulk Operations**: Import/export and batch transaction management
+
+### 🏦 **Account Management**
+
+- **Multiple Account Types**: Support for all financial account types
+- **Real-Time Balances**: Live balance updates with transaction impact
+- **Account Linking**: Connect external accounts (future feature)
+- **Investment Tracking**: Portfolio management and performance monitoring
+
+### 🚀 **Modern Technology Stack**
+
+- **TypeScript**: End-to-end type safety and developer experience
+- **Real-Time Updates**: Redis Pub/Sub for instant data synchronization
+- **Mobile Responsive**: Progressive web app with offline capabilities
+- **Performance Optimized**: SWC compilation, Redis caching, and code splitting
 
 ---
 
-## Getting Started
+## 🚀 Tech Stack
+
+### **Backend**
+
+- **Express.js** - Fast, minimalist web framework
+- **TypeScript** - Type-safe JavaScript development
+- **Prisma ORM** - Modern database toolkit with PostgreSQL
+- **Passport.js** - Google OAuth 2.0 authentication
+- **Redis** - Session store (node-redis) + Application caching (ioredis)
+- **Google Gemini AI** - Advanced financial insights and recommendations
+
+### **Frontend**
+
+- **Next.js 15+** - React framework with App Router
+- **React 19+** - Latest React with concurrent features
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **Headless UI** - Unstyled, accessible UI components
+- **Chart.js** - Beautiful, responsive charts and graphs
+- **Framer Motion** - Smooth animations and transitions
+
+### **Infrastructure**
+
+- **PostgreSQL** - Reliable, ACID-compliant database
+- **Redis** - In-memory data structure store
+- **Render** - Cloud platform for deployment
+- **GitHub Actions** - CI/CD pipeline with automated testing
+
+---
+
+## 🛠️ Quick Start
 
 ### Prerequisites
 
-- Node.js ≥ 18.x
-- pnpm or npm
-- PostgreSQL instance
-- Redis instance (local or managed)
-- Google Cloud OAuth 2.0 Client
-- Google Gemini API key
+- **Node.js** ≥ 18.x
+- **pnpm** (recommended) or npm
+- **PostgreSQL** database
+- **Redis** instance
+- **Google Cloud Console** project with OAuth setup
 
-### 1) Environment Variables
+### 1️⃣ Clone Repository
 
-Copy .env.example to .env and set:
-
-```env
-# Core
-DATABASE_URL=postgres://user:password@host:port/dbname
-REDIS_URL=redis://localhost:6379
-
-# Sessions and OAuth
-SESSION_SECRET=your_super_secret_session_key
-GOOGLE_CLIENT_ID=your_google_oauth_client_id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
-FRONTEND_URL=http://localhost:3000
-CORS_ORIGIN=http://localhost:3000
-
-# AI (Gemini)
-GEMINI_API_KEY=your_gemini_api_key
-
-# Frontend API
-NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+git clone https://github.com/yourusername/ai-finance-dashboard.git
+cd ai-finance-dashboard
 ```
 
-Notes:
+### 2️⃣ Install Dependencies
 
-- Use SESSION_SECRET with high entropy.
-- For local dev over HTTP, cookie.secure=false and sameSite=lax are used automatically by the server.
+```
 
-### 2) Google Cloud Console Setup
+# Install all dependencies
 
-- Create/select a project at Google Cloud Console.
-- APIs \& Services → Credentials → Create OAuth 2.0 Client (Web application).
-- Authorized JavaScript origins:
-  - http://localhost:3000
-- Authorized redirect URIs (must match server mount path):
-  - http://localhost:3001/api/auth/google/callback
-
-Ensure the callback path exactly matches /api/auth/google/callback.
-
-### 3) Install Dependencies
-
-```bash
 pnpm install
+
+# Or install separately
+
+pnpm install --filter backend
+pnpm install --filter frontend
+
 ```
 
-Make sure the backend has:
+### 3️⃣ Environment Setup
 
-- passport, passport-google-oauth20
-- express-session, connect-redis
-- redis (node-redis v4) for session store
-- ioredis for application caching
+Create `.env` file in the project root:
 
-### 4) Database Setup
-
-```bash
-pnpm run migrate:dev     # Prisma migrations
-pnpm run seed            # Optional: seed initial data
 ```
 
-### 5) Run Backend
+# Database
 
-```bash
-pnpm run dev    # tsx + nodemon dev server at http://localhost:3001
+DATABASE_URL="postgresql://username:password@localhost:5432/ai_finance_dashboard"
+
+# Redis
+
+REDIS_URL="redis://localhost:6379"
+
+# Google OAuth 2.0
+
+GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# Sessions
+
+SESSION_SECRET="your-ultra-secure-session-secret-key"
+
+# URLs
+
+FRONTEND_URL="http://localhost:3000"
+CORS_ORIGIN="http://localhost:3000"
+
+# AI Services
+
+GEMINI_API_KEY="your-gemini-api-key"
+
+# Environment
+
+NODE_ENV="development"
+
 ```
 
-Health check:
+### 4️⃣ Google OAuth Setup
 
-- GET http://localhost:3001/health
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create project → Enable Google+ API
+3. Create OAuth 2.0 Client ID:
+   - **Application type**: Web application
+   - **Authorized JavaScript origins**: `http://localhost:3000`
+   - **Authorized redirect URIs**: `http://localhost:3001/api/auth/google/callback`
+4. Copy Client ID and Secret to `.env`
 
-### 6) Run Frontend
+### 5️⃣ Database Setup
 
-```bash
-pnpm run dev    # Next.js at http://localhost:3000
+```
+
+# Generate Prisma client
+
+pnpm prisma generate
+
+# Run migrations
+
+pnpm prisma migrate dev
+
+# Seed database (optional)
+
+pnpm prisma db seed
+
+```
+
+### 6️⃣ Start Development
+
+```
+
+# Start backend (Express API)
+
+pnpm dev
+
+# In another terminal, start frontend (Next.js)
+
+cd frontend \&\& pnpm dev
+
+# Or use concurrent mode
+
+pnpm dev:all
+
+```
+
+Visit **http://localhost:3000** to see the application! 🎉
+
+---
+
+## 📁 Project Structure
+
+```
+
+ai-finance-dashboard/
+├── 📁 backend/ \# Express.js API
+│ ├── 📁 src/
+│ │ ├── 📁 config/ \# OAuth \& app configuration
+│ │ ├── 📁 middleware/ \# Auth \& validation middleware
+│ │ ├── 📁 routes/ \# API route handlers
+│ │ ├── 📁 services/ \# Business logic \& external services
+│ │ └── 📄 index.ts \# Server entry point
+│ ├── 📁 prisma/ \# Database schema \& migrations
+│ └── 📄 package.json
+├── 📁 frontend/ \# Next.js React app
+│ ├── 📁 src/
+│ │ ├── 📁 app/ \# App Router pages
+│ │ ├── 📁 components/ \# Reusable UI components
+│ │ ├── 📁 contexts/ \# React Context providers
+│ │ ├── 📁 lib/ \# Utilities \& API client
+│ │ └── 📁 types/ \# TypeScript definitions
+│ └── 📄 package.json
+├── 📁 .github/workflows/ \# CI/CD pipelines
+├── 📄 README.md \# This file
+├── 📄 docker-compose.yml \# Local development services
+└── 📄 package.json \# Workspace configuration
+
 ```
 
 ---
 
-## Authentication
+## 🔌 API Endpoints
 
-The app uses Google OAuth with session-based authentication:
+### **Authentication** (`/api/auth`)
 
-- Session store: Redis via connect-redis + node-redis (separate from ioredis)
-- OAuth endpoints:
-  - GET /api/auth/google — start Google OAuth
-  - GET /api/auth/google/callback — OAuth redirect/callback
-  - GET /api/auth/me — current authenticated user
-  - GET /api/auth/status — session status
-  - POST /api/auth/logout — clear session
+```
 
-Frontend
+GET /api/auth/google \# Initiate Google OAuth
+GET /api/auth/google/callback \# OAuth callback handler
+GET /api/auth/me \# Get current user
+GET /api/auth/status \# Check auth status
+POST /api/auth/logout \# Logout user
 
-- Axios is configured with withCredentials: true to send cookies.
-- CORS is configured on the server with credentials: true and exact origin.
+```
 
-Linking users
+### **Dashboard** (`/api/dashboard`)
 
-- If a user with the same email exists, the Google account is linked (adds googleId, avatar).
-- Otherwise, a new user is created and default accounts are provisioned.
+```
 
----
+GET /api/dashboard/stats \# Overview statistics
+GET /api/dashboard/analytics \# Category breakdowns
+GET /api/dashboard/transactions \# Recent transactions
 
-## API Endpoints
+```
 
-Key API endpoints (condensed):
+### **Transactions** (`/api/transactions`)
 
-Authentication (Google OAuth)
+```
 
-- GET /api/auth/google — initiate OAuth
-- GET /api/auth/google/callback — OAuth callback
-- GET /api/auth/me — current user
-- GET /api/auth/status — auth status
-- POST /api/auth/logout — logout
+GET /api/transactions \# List with filtering \& pagination
+POST /api/transactions \# Create new transaction
+PUT /api/transactions/:id \# Update transaction
+DELETE /api/transactions/:id \# Delete transaction
 
-Dashboard
+```
 
-- GET /api/dashboard/stats — summary metrics
-- GET /api/dashboard/transactions/recent — recent transactions
-- GET /api/dashboard/analytics/categories — category breakdown
+### **Accounts** (`/api/accounts`)
 
-Transactions
+```
 
-- GET /api/transactions — paginated list with filters
-- POST /api/transactions — create transaction
+GET /api/accounts \# List user accounts
+POST /api/accounts \# Create new account
+GET /api/accounts/:id \# Get account details
+PUT /api/accounts/:id \# Update account
 
-Accounts
+```
 
-- GET /api/accounts — list accounts
-- POST /api/accounts — create account
-- GET /api/accounts/:id — account by id
+### **AI Insights** (`/api/ai`)
 
-AI Insights
+```
 
-- GET /api/ai/insights — AI recommendations
-- POST /api/ai/analyze — generate fresh insights
-- GET /api/ai/summary — insights summary
+GET /api/ai/insights \# Get AI recommendations
+POST /api/ai/analyze \# Generate new analysis
+GET /api/ai/summary \# Financial summary
+
+```
 
 ---
 
-## Sessions and Redis
+## 🐳 Docker Development
 
-- Session store uses node-redis v4 client with connect-redis.
-- Application caching and Pub/Sub use ioredis (redisService).
-- Do not pass an ioredis client into connect-redis v7; use a node-redis client for sessions to avoid Redis “ERR syntax error”.
+```
 
----
+# docker-compose.yml
 
-## Frontend Integration
+version: '3.8'
+services:
+postgres:
+image: postgres:15
+environment:
+POSTGRES_DB: ai_finance_dashboard
+POSTGRES_USER: postgres
+POSTGRES_PASSWORD: postgres
+ports:
 
-- Axios base URL: NEXT_PUBLIC_API_URL (default http://localhost:3001)
-- Axios withCredentials: true (cookies)
-- AuthContext manages session state via /api/auth/status and /api/auth/me
-- Login flow triggers window.location = `${API_BASE_URL}/api/auth/google`
+- "5432:5432"
+  volumes:
+- postgres_data:/var/lib/postgresql/data
 
----
+redis:
+image: redis:7-alpine
+ports:
 
-## Security
+- "6379:6379"
+  command: redis-server --appendonly yes
+  volumes:
+- redis_data:/data
 
-- Helmet for HTTP headers
-- CORS with explicit origin and credentials
-- Session cookies: httpOnly, sameSite=lax (dev) or none (prod + HTTPS)
-- No password storage; Google’s OAuth handles identity
-- Zod validation on inputs
+volumes:
+postgres_data:
+redis_data:
 
----
+```
 
-## Scripts
+**Start services:**
 
-Common scripts (may vary based on your package.json):
+```
 
-- pnpm run dev — start backend dev server
-- pnpm run build — compile TypeScript
-- pnpm run migrate:dev — apply Prisma migrations
-- pnpm run seed — seed database
-- pnpm run lint — lint code
-- pnpm run type-check — TypeScript checks
+docker-compose up -d
 
----
-
-## Troubleshooting
-
-- redirect_uri_mismatch
-  - Ensure callbackURL is exactly /api/auth/google/callback in code.
-  - Ensure Google Console Authorized redirect URI is http://localhost:3001/api/auth/google/callback.
-- req.isAuthenticated is not a function
-  - Ensure middleware order: session → passport.initialize() → passport.session() → routes.
-- Redis ReplyError: ERR syntax error on SET
-  - Use node-redis as the session store client; don’t pass an ioredis client to connect-redis v7.
-- 401 after login on frontend
-  - Ensure CORS credentials:true on server and axios withCredentials:true on client.
-  - Ensure cookie sameSite/secure is set correctly for the environment.
+```
 
 ---
 
-## License
+## 🚀 Deployment
 
-MIT – Free for personal and commercial use. See LICENSE for details.
+### **Deploy to Render**
 
-## Credits
+1. **Create Services:**
 
-Developed by the Finance Dashboard Team
-Powered by Google Gemini AI, Google OAuth, Express.js, Next.js, and Tailwind CSS.
+   - **Backend**: Node.js service
+   - **Frontend**: Static site (optional, if separate)
+   - **Database**: PostgreSQL
+   - **Redis**: Redis instance
 
-## Screenshots
+2. **Environment Variables:**
 
-Add dashboard, AI insights, and analytics screenshots here.
-<span style="display:none">[^1]</span>
+```
 
-<div style="text-align: center">⁂</div>
+# Production environment variables
 
-[^1]: README.md
+DATABASE_URL=<render-postgres-url>
+REDIS_URL=<render-redis-url>
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+SESSION_SECRET=<secure-random-string>
+FRONTEND_URL=<your-frontend-domain>
+GEMINI_API_KEY=<your-gemini-key>
+NODE_ENV=production
+
+```
+
+3. **Deploy via GitHub:**
+   - Connect repository to Render
+   - Configure auto-deploy from `main` branch
+   - CI/CD pipeline handles testing & deployment
+
+### **GitHub Actions CI/CD**
+
+The project includes automated deployment pipeline:
+
+- ✅ **Testing**: PostgreSQL + Redis integration tests
+- 🔍 **Security**: Dependency audit & secret scanning
+- 🚀 **Deploy**: Automated Render deployment
+- 📊 **Health**: Post-deployment verification
+- 📱 **Notify**: Discord/Slack deployment notifications
+
+---
+
+## 🧪 Testing
+
+```
+
+# Run all tests
+
+pnpm test
+
+# Type checking
+
+pnpm type-check
+
+# Lint code
+
+pnpm lint
+
+# Security audit
+
+pnpm audit
+
+# Test with services (requires Docker)
+
+docker-compose up -d
+pnpm test:integration
+
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these steps:
+
+1. **Fork** the repository
+2. **Create** feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to branch (`git push origin feature/amazing-feature`)
+5. **Open** Pull Request
+
+### **Development Guidelines**
+
+- Follow TypeScript strict mode
+- Use Tailwind CSS for styling
+- Write tests for new features
+- Update documentation
+- Follow conventional commit messages
+
+---
+
+## 📋 Roadmap
+
+### **Phase 1** ✅ _Completed_
+
+- [x] Google OAuth authentication
+- [x] Basic dashboard and transactions
+- [x] Redis session management
+- [x] Mobile-responsive design
+
+### **Phase 2** 🚧 _In Progress_
+
+- [ ] Advanced AI insights with Gemini
+- [ ] Investment portfolio tracking
+- [ ] Budget alerts and notifications
+- [ ] Data export/import functionality
+
+### **Phase 3** 📅 _Planned_
+
+- [ ] Bank account integration (Plaid)
+- [ ] Collaborative budgets and sharing
+- [ ] Advanced reporting and analytics
+- [ ] Mobile app (React Native)
+
+### **Phase 4** 🔮 _Future_
+
+- [ ] Cryptocurrency tracking
+- [ ] Tax preparation assistance
+- [ ] Financial advisor matching
+- [ ] Open Banking API integration
+
+---
+
+## 🐛 Troubleshooting
+
+### **Common Issues**
+
+**🔐 OAuth Error: `redirect_uri_mismatch`**
+
+```
+
+# Ensure Google Console redirect URI exactly matches:
+
+http://localhost:3001/api/auth/google/callback \# (local)
+https://your-domain.onrender.com/api/auth/google/callback \# (production)
+
+```
+
+**💾 Redis Connection Error**
+
+```
+
+# Check Redis URL format:
+
+REDIS_URL="redis://localhost:6379" \# Local
+REDIS_URL="rediss://user:pass@host:port" \# Render/Production
+
+```
+
+**🗄️ Database Migration Issues**
+
+```
+
+# Reset database (development only)
+
+pnpm prisma migrate reset
+
+# Generate fresh client
+
+pnpm prisma generate
+
+# Deploy migrations
+
+pnpm prisma migrate deploy
+
+```
+
+**🔧 Build Errors**
+
+```
+
+# Clear caches
+
+pnpm store prune
+rm -rf node_modules
+pnpm install
+
+# Type check
+
+pnpm type-check
+
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Google Gemini AI** - For intelligent financial insights
+- **Render** - For reliable cloud hosting
+- **Tailwind CSS** - For beautiful, responsive design
+- **Prisma** - For excellent database developer experience
+- **Next.js Team** - For the amazing React framework
+
+---
+
+## 📞 Support
+
+- 📧 **Email**: nikhilmhatre703@gmail.com
+- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/ai-finance-dashboard/issues)
+
+---
+
+<div align="center">
+
+**Built with ❤️ by Nikhil Mhatre**
+
+_Empowering financial wellness through intelligent technology_
+
+[![GitHub Stars](https://img.shields.io/github/stars/yourusername/ai-finance-dashboard?style=social)](https://github.com/yourusername/ai-finance-dashboard)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/yourhandle?style=social)](https://twitter.com/yourhandle)
+
+</div>
