@@ -115,17 +115,13 @@ app.use(
     }),
     secret: process.env.SESSION_SECRET || "your-session-secret-key",
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     rolling: true, // Reset expiry on activity
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      // Add domain for production
-      ...(process.env.NODE_ENV === "production" && {
-        domain: process.env.COOKIE_DOMAIN || undefined,
-      }),
     },
     name: "finance.sid",
   })
