@@ -209,7 +209,6 @@ app.use(
     next: express.NextFunction
   ) => {
     console.error("💥 Global Error:", error);
-
     res.status(error.status || 500).json({
       status: "error",
       message:

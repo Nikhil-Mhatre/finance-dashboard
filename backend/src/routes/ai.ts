@@ -12,6 +12,7 @@ import {
   generateFinancialInsights,
   getUserInsights,
 } from "../services/aiService";
+import { getUserEmail, requireAuth } from "../utils/auth";
 
 const router: Router = Router();
 
@@ -23,7 +24,8 @@ const router: Router = Router();
  */
 router.get("/insights", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const user = requireAuth(req);
+    const userId = user.id;
 
     // Get existing insights
     let insights = await getUserInsights(userId);
@@ -35,7 +37,7 @@ router.get("/insights", authenticateToken, async (req, res) => {
     }
 
     console.log(
-      `🧠 Retrieved ${insights.length} AI insights for user: ${req.user!.email}`
+      `🧠 Retrieved ${insights.length} AI insights for user: ${getUserEmail(req)}`
     );
 
     res.json({
@@ -62,15 +64,16 @@ router.get("/insights", authenticateToken, async (req, res) => {
  */
 router.post("/analyze", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const user = requireAuth(req);
+    const userId = user.id;
 
     console.log("🤖 Generating fresh AI analysis...");
     const insights = await generateFinancialInsights(userId);
 
     console.log(
-      `🧠 Generated ${insights.length} new AI insights for user: ${
-        req.user!.email
-      }`
+      `🧠 Generated ${insights.length} new AI insights for user: ${getUserEmail(
+        req
+      )}`
     );
 
     res.json({
@@ -97,7 +100,8 @@ router.post("/analyze", authenticateToken, async (req, res) => {
  */
 router.get("/summary", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const user = requireAuth(req);
+    const userId = user.id;
     const insights = await getUserInsights(userId);
 
     // Create summary

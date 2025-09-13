@@ -1,22 +1,13 @@
-/**
- * Account Routes
- * Handles user financial accounts management
- *
- * @author Finance Dashboard Team
- * @version 1.0.0
- */
-
+// src/routes/accounts.ts - CORRECTED
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { authenticateToken } from "../middleware/auth";
+import { requireAuth, getUserEmail } from "../utils/auth";
 
 const router: Router = Router();
 const prisma = new PrismaClient();
 
-/**
- * Account validation schema
- */
 const accountSchema = z.object({
   name: z.string().min(1, "Account name is required"),
   type: z.enum([
@@ -31,18 +22,13 @@ const accountSchema = z.object({
   currency: z.string().default("USD"),
 });
 
-/**
- * Get all user accounts
- * @route GET /api/accounts
- * @header Authorization: Bearer {token}
- * @returns {Object} User accounts list
- */
 router.get("/", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const user = requireAuth(req, res);
+    if (!user) return; // Response already sent by requireAuth
 
     const accounts = await prisma.account.findMany({
-      where: { userId, isActive: true },
+      where: { userId: user.id, isActive: true },
       orderBy: { createdAt: "asc" },
     });
 
@@ -58,7 +44,7 @@ router.get("/", authenticateToken, async (req, res) => {
     }));
 
     console.log(
-      `🏦 Fetched ${accounts.length} accounts for user: ${req.user!.email}`
+      `🏦 Fetched ${accounts.length} accounts for user: ${getUserEmail(req)}`
     );
 
     res.json({
@@ -76,22 +62,16 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * Get single account by ID
- * @route GET /api/accounts/:id
- * @header Authorization: Bearer {token}
- * @param {string} id - Account ID
- * @returns {Object} Account details
- */
 router.get("/:id", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
-    const accountId = req.params.id;
+    const user = requireAuth(req, res);
+    if (!user) return;
 
+    const accountId = req.params.id;
     const account = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId,
+        userId: user.id,
         isActive: true,
       },
     });
@@ -130,22 +110,16 @@ router.get("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * Create new account
- * @route POST /api/accounts
- * @header Authorization: Bearer {token}
- * @body {name, type, balance?, currency?}
- * @returns {Object} Created account
- */
 router.post("/", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
-    const validatedData = accountSchema.parse(req.body);
+    const user = requireAuth(req, res);
+    if (!user) return;
 
+    const validatedData = accountSchema.parse(req.body);
     const account = await prisma.account.create({
       data: {
         ...validatedData,
-        userId,
+        userId: user.id,
       },
     });
 
@@ -170,7 +144,6 @@ router.post("/", authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Create account error:", error);
-
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         status: "error",

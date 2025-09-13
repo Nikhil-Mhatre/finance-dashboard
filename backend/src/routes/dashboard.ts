@@ -10,6 +10,7 @@ import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { authenticateToken } from "../middleware/auth";
 import { redisService } from "../services/redisService";
+import { requireAuth } from "../utils/auth";
 
 const router: Router = Router();
 const prisma = new PrismaClient();
@@ -23,7 +24,8 @@ const prisma = new PrismaClient();
 
 router.get("/stats", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const user = requireAuth(req);
+    const userId = user.id;
 
     // Try to get from cache first
     const cachedStats = await redisService.getDashboardData(userId);
@@ -200,7 +202,8 @@ router.get("/stats", authenticateToken, async (req, res) => {
  */
 router.get("/transactions/recent", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const user = requireAuth(req);
+    const userId = user.id;
     const limit = parseInt(req.query.limit as string) || 10;
 
     const transactions = await prisma.transaction.findMany({
@@ -255,7 +258,8 @@ router.get("/transactions/recent", authenticateToken, async (req, res) => {
  */
 router.get("/analytics/categories", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const user = requireAuth(req);
+    const userId = user.id;
     const startDate =
       (req.query.startDate as string) ||
       new Date(
