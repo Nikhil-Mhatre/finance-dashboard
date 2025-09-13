@@ -9,7 +9,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
-import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { authenticateToken } from "../middleware/auth";
 
 const router: Router = Router();
 const prisma = new PrismaClient();
@@ -37,7 +37,7 @@ const accountSchema = z.object({
  * @header Authorization: Bearer {token}
  * @returns {Object} User accounts list
  */
-router.get("/", authenticateToken, async (req: AuthRequest, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const userId = req.user!.id;
 
@@ -83,7 +83,7 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
  * @param {string} id - Account ID
  * @returns {Object} Account details
  */
-router.get("/:id", authenticateToken, async (req: AuthRequest, res) => {
+router.get("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = req.user!.id;
     const accountId = req.params.id;
@@ -137,7 +137,7 @@ router.get("/:id", authenticateToken, async (req: AuthRequest, res) => {
  * @body {name, type, balance?, currency?}
  * @returns {Object} Created account
  */
-router.post("/", authenticateToken, async (req: AuthRequest, res) => {
+router.post("/", authenticateToken, async (req, res) => {
   try {
     const userId = req.user!.id;
     const validatedData = accountSchema.parse(req.body);

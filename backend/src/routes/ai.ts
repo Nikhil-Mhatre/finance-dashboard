@@ -7,7 +7,7 @@
  */
 
 import { Router } from "express";
-import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { authenticateToken } from "../middleware/auth";
 import {
   generateFinancialInsights,
   getUserInsights,
@@ -21,7 +21,7 @@ const router: Router = Router();
  * @header Authorization: Bearer {token}
  * @returns {Object} AI insights and recommendations
  */
-router.get("/insights", authenticateToken, async (req: AuthRequest, res) => {
+router.get("/insights", authenticateToken, async (req, res) => {
   try {
     const userId = req.user!.id;
 
@@ -60,7 +60,7 @@ router.get("/insights", authenticateToken, async (req: AuthRequest, res) => {
  * @header Authorization: Bearer {token}
  * @returns {Object} Newly generated AI insights
  */
-router.post("/analyze", authenticateToken, async (req: AuthRequest, res) => {
+router.post("/analyze", authenticateToken, async (req, res) => {
   try {
     const userId = req.user!.id;
 
@@ -95,7 +95,7 @@ router.post("/analyze", authenticateToken, async (req: AuthRequest, res) => {
  * @header Authorization: Bearer {token}
  * @returns {Object} AI insights summary
  */
-router.get("/summary", authenticateToken, async (req: AuthRequest, res) => {
+router.get("/summary", authenticateToken, async (req, res) => {
   try {
     const userId = req.user!.id;
     const insights = await getUserInsights(userId);
@@ -105,10 +105,13 @@ router.get("/summary", authenticateToken, async (req: AuthRequest, res) => {
       totalInsights: insights.length,
       highConfidenceInsights: insights.filter((i) => i.confidence >= 0.8)
         .length,
-      insightTypes: insights.reduce((acc, insight) => {
-        acc[insight.type] = (acc[insight.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
+      insightTypes: insights.reduce(
+        (acc, insight) => {
+          acc[insight.type] = (acc[insight.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
       latestInsight: insights[0] || null,
       averageConfidence:
         insights.length > 0

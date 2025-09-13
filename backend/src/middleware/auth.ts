@@ -1,23 +1,5 @@
-// src/middleware/auth.ts - COMPLETE REPLACEMENT
-/**
- * Session-based Authentication Middleware
- * Replaces JWT with session-based authentication
- */
-
-import { Request, Response, NextFunction, RequestHandler } from "express";
-
-/**
- * Extended Request interface with user information
- */
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    avatar?: string | null;
-  };
-}
+// src/middleware/auth.ts - COMPLETE FIX
+import { RequestHandler } from "express";
 
 /**
  * Session Authentication Middleware
@@ -25,11 +7,7 @@ export interface AuthRequest extends Request {
  */
 export const authenticateSession: RequestHandler = async (req, res, next) => {
   try {
-    // isAuthenticated is added by passport; TS may not see it without augmentation
-    const isAuth =
-      typeof (req as any).isAuthenticated === "function"
-        ? (req as any).isAuthenticated()
-        : false;
+    const isAuth = req.isAuthenticated?.() ?? false;
 
     if (!isAuth) {
       res.status(401).json({
@@ -39,6 +17,7 @@ export const authenticateSession: RequestHandler = async (req, res, next) => {
       });
       return;
     }
+
     next();
   } catch (error) {
     console.error("❌ Auth middleware error:", error);
@@ -52,16 +31,10 @@ export const authenticateSession: RequestHandler = async (req, res, next) => {
 
 /**
  * Optional Authentication Middleware
- * Adds user information if authenticated, but doesn't require authentication
  */
-export async function optionalAuth(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  // User information already available in req.user if authenticated
+export const optionalAuth: RequestHandler = async (req, res, next) => {
   next();
-}
+};
 
-// Export aliases for compatibility
-export const authenticateToken = authenticateSession;
+// Export with explicit typing to fix inference errors
+export const authenticateToken: RequestHandler = authenticateSession;

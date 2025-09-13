@@ -9,7 +9,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { z, ZodError } from "zod";
-import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { authenticateToken } from "../middleware/auth";
 import { redisService } from "../services/redisService"; // No change needed here, the error is likely from a mismatch in AuthRequest definition or how authenticateToken is typed.
 
 const router: Router = Router();
@@ -56,7 +56,14 @@ const transactionSchema = z.object({
  */
 router.post("/", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not authenticated",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const validatedData = transactionSchema.parse(req.body);
 
     // Verify account belongs to user
@@ -168,7 +175,14 @@ router.post("/", authenticateToken, async (req, res) => {
  */
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not authenticated",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const transactionId = req.params.id;
 
     // Validate request body
@@ -309,7 +323,14 @@ router.put("/:id", authenticateToken, async (req, res) => {
  */
 router.delete("/:id", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not authenticated",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const transactionId = req.params.id;
 
     // Find the existing transaction and verify ownership
@@ -386,7 +407,14 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 // Sorting + search + response formatting — clean implementation
 router.get("/", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not authenticated",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
