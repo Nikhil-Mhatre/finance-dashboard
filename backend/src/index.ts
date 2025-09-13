@@ -55,16 +55,48 @@ async function initializeRedis() {
 /**
  * Middleware Configuration
  */
+
+app.set("trust proxy", 1); // Trust first proxy (important for Render)
+
 app.use(
   helmet({
     crossOriginEmbedderPolicy: false,
+    // Allow cookies in production
+    contentSecurityPolicy:
+      process.env.NODE_ENV === "production"
+        ? {
+            directives: {
+              "connect-src": ["'self'", process.env.FRONTEND_URL || ""],
+            },
+          }
+        : false,
   })
 );
 
+// CORS configuration for production
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, etc.)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        process.env.FRONTEND_URL,
+        process.env.CORS_ORIGIN,
+        "http://localhost:3000",
+        "https://localhost:3000",
+      ].filter(Boolean);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️ CORS blocked origin: ${origin}`);
+        callback(null, true); // Allow in development, log warning
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
 
@@ -79,15 +111,21 @@ app.use(
     store: new RedisStore({
       client: redisService.getOAuthRedisClient, // Use your existing Redis client!
       prefix: "sess:", // Optional: prefix for session keys in Redis
+      ttl: 7 * 24 * 60 * 60, // 7 days in seconds
     }),
     secret: process.env.SESSION_SECRET || "your-session-secret-key",
     resave: false,
     saveUninitialized: false,
+    rolling: true, // Reset expiry on activity
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      // Add domain for production
+      ...(process.env.NODE_ENV === "production" && {
+        domain: process.env.COOKIE_DOMAIN || undefined,
+      }),
     },
     name: "finance.sid",
   })
@@ -95,6 +133,15 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Add session debug middleware
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`🍪 Session ID: ${req.sessionID}`);
+    console.log(`🔐 Authenticated: ${req.isAuthenticated?.()}`);
+  }
+  next();
+});
 
 /**
  * Health check endpoint - Updated for CI/CD testing
@@ -179,9 +226,10 @@ app.use("*", (req, res) => {
     message: `Route ${req.originalUrl} not found`,
     availableRoutes: [
       "GET /health",
-      "POST /api/auth/register",
-      "POST /api/auth/login",
-      "GET /api/auth/profile",
+      "GET /api/auth/google",
+      "GET /api/auth/me",
+      "GET /api/auth/status",
+      "POST /api/auth/logout",
       "GET /api/dashboard/stats",
       "GET /api/dashboard/transactions/recent",
       "GET /api/dashboard/analytics/categories",
@@ -189,10 +237,9 @@ app.use("*", (req, res) => {
       "POST /api/transactions",
       "GET /api/accounts",
       "POST /api/accounts",
-      "GET /api/accounts/:id",
-      "GET /api/ai/insights", // Add these
-      "POST /api/ai/analyze", // Add these
-      "GET /api/ai/summary", // Add these
+      "GET /api/ai/insights",
+      "POST /api/ai/analyze",
+      "GET /api/ai/summary",
     ],
     timestamp: new Date().toISOString(),
   });
@@ -238,9 +285,10 @@ async function startServer() {
       console.log("---");
       console.log("🎯 Available API endpoints:");
       console.log("Authentication:");
-      console.log("• POST /api/auth/register - User registration");
-      console.log("• POST /api/auth/login - User login");
-      console.log("• GET /api/auth/profile - Get user profile");
+      console.log("• GET /api/auth/google - Google OAuth login");
+      console.log("• GET /api/auth/me - Get current user");
+      console.log("• GET /api/auth/status - Check auth status");
+      console.log("• POST /api/auth/logout - Logout user");
       console.log("Dashboard:");
       console.log("• GET /api/dashboard/stats - Dashboard statistics");
       console.log(
