@@ -101,11 +101,13 @@ export function configureGoogleOAuth() {
 
   // Session serialization
   passport.serializeUser((user: any, done) => {
+    console.log(`📝 Serializing user: ${user.id}`);
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: string, done) => {
     try {
+      console.log(`📖 Deserializing user: ${id}`);
       const user = await prisma.user.findUnique({
         where: { id },
         select: {
@@ -118,8 +120,16 @@ export function configureGoogleOAuth() {
           updatedAt: true,
         },
       });
+
+      if (!user) {
+        console.warn(`⚠️ User not found during deserialization: ${id}`);
+        return done(null, false);
+      }
+
+      console.log(`✅ User deserialized: ${user.email}`);
       done(null, user);
     } catch (error) {
+      console.error(`❌ Deserialization error: ${error}`);
       done(error, null);
     }
   });
