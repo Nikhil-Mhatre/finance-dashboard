@@ -30,30 +30,33 @@ class RedisService {
 
   private setupEventHandlers() {
     this.client.on("connect", () => {
-      console.log("✅ Redis connected successfully");
+      console.log("✅ Redis (ioredis) connected successfully");
       this.isConnected = true;
     });
 
-    this.OAuthRedisClient.on("connect", (err) =>
-      console.error("Redis oAuth client connected sucessfully:", err)
-    );
+    // ✅ FIXED: Remove 'err' parameter from connect event
+    this.OAuthRedisClient.on("connect", () => {
+      console.log("✅ Redis OAuth client connected successfully");
+    });
 
     this.client.on("error", (error) => {
       console.error("❌ Redis connection error:", error);
       this.isConnected = false;
     });
 
-    this.OAuthRedisClient.on("error", (err) =>
-      console.error("Redis session client error:", err)
-    );
+    this.OAuthRedisClient.on("error", (err) => {
+      console.error("❌ Redis session client error:", err);
+    });
 
     this.client.on("close", () => {
       console.log("⚠️ Redis connection closed");
       this.isConnected = false;
     });
-    this.OAuthRedisClient.on("close", (err) =>
-      console.error("Redis oAuth client connection closed:", err)
-    );
+
+    // ✅ FIXED: Remove 'err' parameter from close event
+    this.OAuthRedisClient.on("close", () => {
+      console.log("⚠️ Redis OAuth client connection closed");
+    });
   }
 
   async connect() {
@@ -61,13 +64,6 @@ class RedisService {
       await this.client.connect();
       await this.OAuthRedisClient.connect();
     }
-  }
-
-  /**
-   * Get Redis client for external use (like connect-redis)
-   */
-  get getOAuthRedisClient(): RedisClientType {
-    return this.OAuthRedisClient;
   }
 
   // Cache user dashboard data

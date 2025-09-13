@@ -109,7 +109,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
     store: new RedisStore({
-      client: redisService.getOAuthRedisClient, // Use your existing Redis client!
+      client: redisService.OAuthRedisClient, // Use your existing Redis client!
       prefix: "sess:", // Optional: prefix for session keys in Redis
       ttl: 7 * 24 * 60 * 60, // 7 days in seconds
     }),
@@ -188,6 +188,19 @@ app.get("/health", async (req, res) => {
 /**
  * API Routes
  */
+
+app.get("/api/debug/session", (req, res) => {
+  res.json({
+    sessionID: req.sessionID,
+    isAuthenticated: req.isAuthenticated?.(),
+    hasUser: !!req.user,
+    cookies: req.headers.cookie,
+    origin: req.get("origin"),
+    userAgent: req.get("user-agent"),
+    session: req.session,
+    environment: process.env.NODE_ENV,
+  });
+});
 
 app.use("/api", (req, res, next) => {
   console.log(`📊 API Request: ${req.method} ${req.path}`);
