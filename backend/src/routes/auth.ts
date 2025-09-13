@@ -1,9 +1,4 @@
-// src/routes/auth.ts - COMPLETE REPLACEMENT
-/**
- * OAuth Authentication Routes
- * Google OAuth 2.0 authentication endpoints
- */
-
+// src/routes/auth.ts - FIXED VERSION
 import { Router } from "express";
 import passport from "passport";
 
@@ -25,11 +20,11 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "/api/auth/login?error=oauth_failed",
+    failureRedirect: "/auth/login?error=oauth_failed",
   }),
   (req, res) => {
     // Successful authentication
-    console.log(`✅ OAuth login successful for: ${(req.user as any)?.email}`);
+    console.log(`✅ OAuth login successful for: ${req.user?.email}`);
     res.redirect(process.env.FRONTEND_URL || "http://localhost:3000");
   }
 );
@@ -39,7 +34,10 @@ router.get(
  * @route GET /auth/me
  */
 router.get("/me", (req, res) => {
-  if (!req.isAuthenticated()) {
+  // Safe check for isAuthenticated method
+  const isAuthenticated = req.isAuthenticated?.() ?? false;
+
+  if (!isAuthenticated) {
     return res.status(401).json({
       status: "error",
       message: "Not authenticated",
@@ -61,6 +59,15 @@ router.get("/me", (req, res) => {
  * @route POST /auth/logout
  */
 router.post("/logout", (req, res) => {
+  // Safe check for logout method
+  if (!req.logout) {
+    return res.status(500).json({
+      status: "error",
+      message: "Logout method not available",
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   req.logout((err) => {
     if (err) {
       return res.status(500).json({
@@ -89,11 +96,13 @@ router.post("/logout", (req, res) => {
  * @route GET /auth/status
  */
 router.get("/status", (req, res) => {
+  const isAuthenticated = req.isAuthenticated?.() ?? false;
+
   res.json({
     status: "success",
     data: {
-      isAuthenticated: req.isAuthenticated(),
-      user: req.isAuthenticated() ? req.user : null,
+      isAuthenticated,
+      user: isAuthenticated ? req.user : null,
     },
     timestamp: new Date().toISOString(),
   });

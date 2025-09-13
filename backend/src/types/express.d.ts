@@ -9,8 +9,10 @@ declare module "express-serve-static-core" {
       firstName?: string | null;
       lastName?: string | null;
       avatar?: string | null;
+      createdAt?: Date;
+      updatedAt?: Date;
     };
-    // Passport injects isAuthenticated at runtime; add it for type safety
     isAuthenticated?: () => boolean;
+    logout?: (callback: (err: any) => void) => void;
   }
 }
